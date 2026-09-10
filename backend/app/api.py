@@ -82,3 +82,18 @@ def submit_answer(
 ) -> SessionOut:
     flow = request.app.state.flow_service
     return flow.submit_answer(db, session_id, body.round, body.answer)
+
+
+@router.post(
+    "/sessions/{session_id}/retry",
+    response_model=SessionOut,
+    summary="生成失败后重新生成金句",
+    responses={404: {"description": "会话不存在"}, 409: {"description": "会话状态不允许重试"}},
+)
+def retry_generation(
+    session_id: str,
+    request: Request,
+    db: OrmSession = Depends(get_db),
+) -> SessionOut:
+    coordinator = request.app.state.generation_service
+    return coordinator.retry(db, session_id)

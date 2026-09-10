@@ -17,6 +17,7 @@ from app.config import Settings
 from app.error_codes import (
     ANSWER_ALREADY_EXISTS,
     ANSWER_TOO_LONG,
+    GENERATION_FAILED,
     INVALID_ANSWER,
     INVALID_SESSION_STATE,
     ROUND_MISMATCH,
@@ -27,6 +28,7 @@ from app.models import Session as SessionRow
 from app.questions import QuestionDef, QuestionsConfig
 from app.schemas import AnswerIn, SessionOut, SessionStatus
 from app.services import generation, session_service
+from app.services.generation import QuoteGenerationError
 
 _TRANSITIONS: dict[int, tuple[SessionStatus, int]] = {
     1: (SessionStatus.QUESTION_2, 2),
@@ -89,7 +91,15 @@ class FlowService:
         repo.update_session_state(db, row, next_status.value, next_round)
 
         if round_no == 3:
-            self.generation.run(db, row)
+            try:
+                self.generation.run(db, row)
+            except QuoteGenerationError as exc:
+                raise ApiError(
+                    status_code=502,
+                    code=GENERATION_FAILED,
+                    message="金句生成失败，请重试",
+                    retryable=True,
+                ) from exc
 
         return session_service.load_session_state(db, self.questions, session_id)
 

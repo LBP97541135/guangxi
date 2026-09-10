@@ -10,10 +10,14 @@ from app.config import Settings, get_settings
 from app.database import create_engine_from_url, init_db, make_session_factory
 from app.error_codes import INVALID_PARAMS
 from app.errors import ApiError, api_error_handler, unhandled_error_handler
+from app.llm.fake import FakeQuoteProvider
+from app.llm.openai_provider import OpenAIProtocolProvider
+from app.llm.prompt import PromptBuilder, load_system_rules
+from app.llm.validator import QuoteValidator
 from app.log import setup_logging
 from app.questions import load_questions
 from app.services.flow_service import FlowService
-from app.services.generation import FakeQuoteGenerationService
+from app.services.quote_coordinator import QuoteGenerationCoordinator
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -33,7 +37,25 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.engine = engine
     app.state.session_factory = make_session_factory(engine)
 
-    app.state.generation_service = FakeQuoteGenerationService()
+    prompt_builder = PromptBuilder(load_system_rules(settings.prompt_file))
+    if settings.model_provider == "real":
+        if not settings.model_api_key or not settings.model_name:
+            raise RuntimeError("MODEL_PROVIDER=real 需要配置 MODEL_API_KEY 与 MODEL_NAME")
+        provider = OpenAIProtocolProvider(
+            api_key=settings.model_api_key,
+            base_url=settings.model_base_url or "https://api.openai.com/v1",
+            model=settings.model_name,
+            prompt_builder=prompt_builder,
+            timeout_seconds=settings.model_timeout_seconds,
+        )
+    else:
+        provider = FakeQuoteProvider()
+
+    app.state.generation_service = QuoteGenerationCoordinator(
+        provider=provider,
+        validator=QuoteValidator(max_chars=settings.quote_max_chars),
+        questions=app.state.questions,
+    )
     app.state.flow_service = FlowService(
         settings=settings,
         questions=app.state.questions,
