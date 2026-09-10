@@ -11,7 +11,7 @@ def test_create_session_returns_first_question(client):
     assert body["status"] == "QUESTION_1"
     assert body["currentRound"] == 1
     question = body["question"]
-    assert question["key"] == "act1_door_lock"
+    assert question["key"] == "act1_01"
     assert question["text"]
     assert len(question["options"]) >= 1
     assert question["allowFreeText"] is True
@@ -33,7 +33,7 @@ def test_get_new_session_returns_first_question(client):
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "QUESTION_1"
-    assert body["question"]["key"] == "act1_door_lock"
+    assert body["question"]["key"] == "act1_01"
 
 
 def test_get_missing_session_returns_404_with_code(client):
@@ -70,7 +70,7 @@ def test_get_returns_question_per_round_state(client, db_factory):
     body = response.json()
     assert body["status"] == "QUESTION_2"
     assert body["currentRound"] == 2
-    assert body["question"]["key"] == "act2_say_ok"
+    assert body["question"]["key"] == "act2_01"
 
 
 def test_get_generating_returns_status_only(client, db_factory):
@@ -137,14 +137,14 @@ def test_switch_question_cycles_round_variants(client):
     session_id = client.post("/api/sessions").json()["sessionId"]
 
     first = client.get(f"/api/sessions/{session_id}").json()["question"]["key"]
-    keys = [first]
-    for _ in range(3):
-        body = client.post(f"/api/sessions/{session_id}/questions/switch").json()
-        keys.append(body["question"]["key"])
-    assert len(set(keys)) == 4
+    second = client.post(f"/api/sessions/{session_id}/questions/switch").json()["question"]["key"]
+    third = client.post(f"/api/sessions/{session_id}/questions/switch").json()["question"]["key"]
+    assert (first, second, third) == ("act1_01", "act1_02", "act1_03")
 
-    again = client.post(f"/api/sessions/{session_id}/questions/switch").json()
-    assert again["question"]["key"] == first
+    for _ in range(47):
+        client.post(f"/api/sessions/{session_id}/questions/switch")
+    wrapped = client.post(f"/api/sessions/{session_id}/questions/switch").json()["question"]["key"]
+    assert wrapped == first
 
 
 def test_switch_question_returns_title_and_scene_example(client):

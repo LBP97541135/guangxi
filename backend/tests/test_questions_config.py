@@ -34,20 +34,20 @@ def _valid_payload() -> dict:
     }
 
 
-def test_placeholder_config_loads_twelve_variants():
+def test_placeholder_config_loads_full_bank():
     config = load_questions(Path("config/questions.json"))
 
     assert {q.round for q in config.questions} == {1, 2, 3}
-    assert len(config.questions) == 12
+    assert len(config.questions) == 150
     for round_no in (1, 2, 3):
         variants = config.variants_for_round(round_no)
-        assert len(variants) == 4
+        assert len(variants) == 50
         for variant in variants:
             assert variant.title
             assert variant.scene_example
             assert variant.allow_free_text is True
             assert len(variant.options) == 4
-    assert config.default_for_round(1).key == "act1_door_lock"
+    assert config.default_for_round(1).key == "act1_01"
 
 
 def test_valid_config_loads_as_typed_objects(tmp_path):

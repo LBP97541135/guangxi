@@ -205,7 +205,7 @@ def test_prompt_uses_answered_question_variant(client):
 
     config = client.app.state.questions
     assert stub.last_request.questions[0] == config.by_key(switched["key"]).text
-    assert stub.last_request.questions[1] == config.by_key("act2_say_ok").text
+    assert stub.last_request.questions[1] == config.by_key("act2_01").text
 
 
 def test_completed_session_query_returns_original_quote(client):

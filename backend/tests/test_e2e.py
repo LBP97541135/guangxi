@@ -46,11 +46,11 @@ def test_e2e_01_normal_path(client):
     created = client.post("/api/sessions")
     assert created.status_code == 201
     session_id = created.json()["sessionId"]
-    assert created.json()["question"]["key"] == "act1_door_lock"
+    assert created.json()["question"]["key"] == "act1_01"
 
     r1 = _submit(client, session_id, 1, {"type": "option", "optionKey": "c1"})
     assert r1.json()["status"] == "QUESTION_2"
-    assert r1.json()["question"]["key"] == "act2_say_ok"
+    assert r1.json()["question"]["key"] == "act2_01"
 
     r2 = _submit(client, session_id, 2, {"type": "text", "content": "想搬去海边住一个月。"})
     assert r2.json()["status"] == "QUESTION_3"
@@ -78,7 +78,7 @@ def test_e2e_02_refresh_recovery(client):
     body = recovered.json()
     assert body["status"] == "QUESTION_2"
     assert body["currentRound"] == 2
-    assert body["question"]["key"] == "act2_say_ok"
+    assert body["question"]["key"] == "act2_01"
 
     r2 = _submit(client, session_id, 2, {"type": "option", "optionKey": "c1"})
     assert r2.status_code == 200

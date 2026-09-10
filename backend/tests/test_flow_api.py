@@ -18,13 +18,13 @@ def test_three_rounds_full_flow(client, db_factory):
     body1 = r1.json()
     assert body1["status"] == "QUESTION_2"
     assert body1["currentRound"] == 2
-    assert body1["question"]["key"] == "act2_say_ok"
+    assert body1["question"]["key"] == "act2_01"
 
     r2 = _answer_round(client, session_id, 2, type="option", optionKey="c1")
     assert r2.status_code == 200
     body2 = r2.json()
     assert body2["status"] == "QUESTION_3"
-    assert body2["question"]["key"] == "act3_forgotten_day"
+    assert body2["question"]["key"] == "act3_01"
 
     r3 = _answer_round(client, session_id, 3, type="text", content="明明很累，却还是先照顾别人的情绪。")
     assert r3.status_code == 200
