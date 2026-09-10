@@ -1,6 +1,7 @@
 """应用配置。所有可变值来自环境变量，业务代码不得散落硬编码配置。"""
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import field_validator
@@ -12,6 +13,7 @@ class Settings(BaseSettings):
 
     env: str = "dev"
     database_url: str = "sqlite:///./guangxi.db"
+    questions_file: Path = Path("config/questions.json")
 
     model_provider: Literal["fake", "real"] = "fake"
     model_api_key: str | None = None

@@ -1,0 +1,37 @@
+{
+  "questions": [
+    {
+      "round": 1,
+      "key": "surface_scene",
+      "text": "最近有没有一个瞬间，让你突然觉得自己不像平时的自己？",
+      "options": [
+        { "key": "alone", "label": "一个人待着的时候" },
+        { "key": "conflict", "label": "和别人起冲突时" },
+        { "key": "watched", "label": "被很多人注视时" }
+      ],
+      "allowFreeText": true
+    },
+    {
+      "round": 2,
+      "key": "desire_layer",
+      "text": "如果可以完全不管别人的眼光，你最想做什么？",
+      "options": [
+        { "key": "rest", "label": "好好休息一阵子" },
+        { "key": "leave", "label": "离开现在的环境" },
+        { "key": "create", "label": "做一件纯粹喜欢的事" }
+      ],
+      "allowFreeText": true
+    },
+    {
+      "round": 3,
+      "key": "deep_crack",
+      "text": "夜深的时候，最让你放不下的是什么？",
+      "options": [
+        { "key": "unfinished", "label": "一件没做完的事" },
+        { "key": "someone", "label": "一个放不下的人" },
+        { "key": "self", "label": "对自己不满意的地方" }
+      ],
+      "allowFreeText": true
+    }
+  ]
+}

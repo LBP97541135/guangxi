@@ -7,8 +7,10 @@ from fastapi.responses import JSONResponse
 
 from app import api
 from app.config import Settings, get_settings
+from app.error_codes import INVALID_PARAMS
 from app.errors import ApiError, api_error_handler, unhandled_error_handler
 from app.log import setup_logging
+from app.questions import load_questions
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -21,6 +23,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version="0.1.0",
     )
     app.state.settings = settings
+    app.state.questions = load_questions(settings.questions_file)
 
     app.include_router(api.router, prefix="/api")
 
@@ -42,7 +45,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 async def validation_error_handler(request, exc: RequestValidationError) -> JSONResponse:
     return JSONResponse(
         status_code=422,
-        content={"error": {"code": "INVALID_PARAMS", "message": "请求参数不合法", "retryable": False}},
+        content={"error": {"code": INVALID_PARAMS, "message": "请求参数不合法", "retryable": False}},
     )
 
 
