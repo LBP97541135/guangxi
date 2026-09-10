@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app import api
 from app.config import Settings, get_settings
+from app.database import create_engine_from_url, init_db, make_session_factory
 from app.error_codes import INVALID_PARAMS
 from app.errors import ApiError, api_error_handler, unhandled_error_handler
 from app.log import setup_logging
@@ -24,6 +25,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     app.state.questions = load_questions(settings.questions_file)
+
+    engine = create_engine_from_url(settings.database_url)
+    init_db(engine)
+    app.state.engine = engine
+    app.state.session_factory = make_session_factory(engine)
 
     app.include_router(api.router, prefix="/api")
 

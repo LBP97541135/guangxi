@@ -41,6 +41,37 @@ class QuoteOut(CamelModel):
 
 
 class SessionOut(CamelModel):
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        json_schema_extra={
+            "examples": [
+                {
+                    "sessionId": "01993f7b-8c1a-7de2-9f3a-1b2c3d4e5f60",
+                    "status": "QUESTION_1",
+                    "currentRound": 1,
+                    "question": {
+                        "key": "surface_scene",
+                        "text": "最近有没有一个瞬间，让你突然觉得自己不像平时的自己？",
+                        "options": [{"key": "alone", "label": "一个人时"}],
+                        "allowFreeText": True,
+                    },
+                    "quote": None,
+                },
+                {
+                    "sessionId": "01993f80-1a2b-7c3d-9e4f-5a6b7c8d9e0f",
+                    "status": "COMPLETED",
+                    "currentRound": 3,
+                    "question": None,
+                    "quote": {
+                        "id": "01993f81-2b3c-7d4e-8f5a-6b7c8d9e0f1a",
+                        "content": "其实，你不是习惯沉默，只是总把自己的风雨藏在别人屋檐之外。",
+                    },
+                },
+            ]
+        },
+    )
+
     session_id: str
     status: SessionStatus
     current_round: int
