@@ -30,9 +30,11 @@ class OptionOut(CamelModel):
 
 class QuestionOut(CamelModel):
     key: str
+    title: str | None = None
     text: str
     options: list[OptionOut]
     allow_free_text: bool
+    scene_example: str | None = None
 
 
 class QuoteOut(CamelModel):

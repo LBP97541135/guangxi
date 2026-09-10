@@ -11,7 +11,7 @@ def test_create_session_returns_first_question(client):
     assert body["status"] == "QUESTION_1"
     assert body["currentRound"] == 1
     question = body["question"]
-    assert question["key"] == "surface_scene"
+    assert question["key"] == "act1_door_lock"
     assert question["text"]
     assert len(question["options"]) >= 1
     assert question["allowFreeText"] is True
@@ -33,7 +33,7 @@ def test_get_new_session_returns_first_question(client):
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "QUESTION_1"
-    assert body["question"]["key"] == "surface_scene"
+    assert body["question"]["key"] == "act1_door_lock"
 
 
 def test_get_missing_session_returns_404_with_code(client):
@@ -70,7 +70,7 @@ def test_get_returns_question_per_round_state(client, db_factory):
     body = response.json()
     assert body["status"] == "QUESTION_2"
     assert body["currentRound"] == 2
-    assert body["question"]["key"] == "desire_layer"
+    assert body["question"]["key"] == "act2_say_ok"
 
 
 def test_get_generating_returns_status_only(client, db_factory):
@@ -129,4 +129,49 @@ def test_openapi_contains_contract_paths(client):
     paths = schema["paths"]
     assert "/api/sessions" in paths
     assert "/api/sessions/{session_id}" in paths
+    assert "/api/sessions/{session_id}/questions/switch" in paths
     assert "/api/health" in paths
+
+
+def test_switch_question_cycles_round_variants(client):
+    session_id = client.post("/api/sessions").json()["sessionId"]
+
+    first = client.get(f"/api/sessions/{session_id}").json()["question"]["key"]
+    keys = [first]
+    for _ in range(3):
+        body = client.post(f"/api/sessions/{session_id}/questions/switch").json()
+        keys.append(body["question"]["key"])
+    assert len(set(keys)) == 4
+
+    again = client.post(f"/api/sessions/{session_id}/questions/switch").json()
+    assert again["question"]["key"] == first
+
+
+def test_switch_question_returns_title_and_scene_example(client):
+    session_id = client.post("/api/sessions").json()["sessionId"]
+
+    question = client.post(f"/api/sessions/{session_id}/questions/switch").json()["question"]
+
+    assert question["title"]
+    assert question["sceneExample"]
+    assert question["allowFreeText"] is True
+
+
+def test_switch_question_rejected_when_closed(client, db_factory):
+    session_id = client.post("/api/sessions").json()["sessionId"]
+    with db_factory() as db:
+        row = repo.get_session(db, session_id)
+        repo.update_session_state(db, row, status=SessionStatus.COMPLETED.value, current_round=3)
+        db.commit()
+
+    response = client.post(f"/api/sessions/{session_id}/questions/switch")
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "INVALID_SESSION_STATE"
+
+
+def test_switch_question_missing_session_404(client):
+    response = client.post("/api/sessions/00000000-0000-0000-0000-000000000000/questions/switch")
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "SESSION_NOT_FOUND"

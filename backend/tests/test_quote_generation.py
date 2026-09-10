@@ -13,9 +13,11 @@ class StubProvider:
     def __init__(self, results) -> None:
         self.results = list(results)
         self.calls = 0
+        self.last_request = None
 
     def generate(self, request):
         self.calls += 1
+        self.last_request = request
         result = self.results.pop(0)
         if isinstance(result, Exception):
             raise result
@@ -24,8 +26,8 @@ class StubProvider:
 
 def _complete_three_rounds(client):
     session_id = client.post("/api/sessions").json()["sessionId"]
-    client.post(f"/api/sessions/{session_id}/answers", json={"round": 1, "answer": {"type": "option", "optionKey": "alone"}})
-    client.post(f"/api/sessions/{session_id}/answers", json={"round": 2, "answer": {"type": "option", "optionKey": "rest"}})
+    client.post(f"/api/sessions/{session_id}/answers", json={"round": 1, "answer": {"type": "option", "optionKey": "c1"}})
+    client.post(f"/api/sessions/{session_id}/answers", json={"round": 2, "answer": {"type": "option", "optionKey": "c1"}})
     return session_id
 
 
@@ -188,6 +190,22 @@ def test_incomplete_answers_never_call_provider(client, db_factory):
             coordinator.run(db, row)
 
     assert coordinator.provider.calls == 0
+
+
+def test_prompt_uses_answered_question_variant(client):
+    session_id = client.post("/api/sessions").json()["sessionId"]
+    switched = client.post(f"/api/sessions/{session_id}/questions/switch").json()["question"]
+    client.post(f"/api/sessions/{session_id}/answers", json={"round": 1, "answer": {"type": "text", "content": "答案一"}})
+    client.post(f"/api/sessions/{session_id}/answers", json={"round": 2, "answer": {"type": "text", "content": "答案二"}})
+
+    coordinator = client.app.state.generation_service
+    stub = StubProvider([GenerationCandidate(text=GOOD_QUOTE, model="stub")])
+    coordinator.provider = stub
+    _submit_round3(client, session_id)
+
+    config = client.app.state.questions
+    assert stub.last_request.questions[0] == config.by_key(switched["key"]).text
+    assert stub.last_request.questions[1] == config.by_key("act2_say_ok").text
 
 
 def test_completed_session_query_returns_original_quote(client):

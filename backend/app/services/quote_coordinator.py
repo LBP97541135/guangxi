@@ -46,8 +46,8 @@ class QuoteGenerationCoordinator:
         if len(answers) != 3:
             raise RuntimeError(f"会话 {session_row.id} 三轮答案不完整，拒绝调用模型")
 
-        prompt_questions = tuple(self.questions.by_round(round_no).text for round_no in (1, 2, 3))
-        prompt_answers = tuple(self._answer_text(self.questions, answer) for answer in answers)
+        prompt_questions = tuple(self._question_text_for(answer) for answer in answers)
+        prompt_answers = tuple(self._answer_text(answer) for answer in answers)
 
         quote = repo.ensure_quote(db, session_row.id, model=None)
         last_reason = "unknown"
@@ -126,12 +126,24 @@ class QuoteGenerationCoordinator:
         )
         raise QuoteGenerationError(reason)
 
-    @staticmethod
-    def _answer_text(config: QuestionsConfig, answer: Answer) -> str:
+    def _question_text_for(self, answer: Answer) -> str:
+        """Prompt 里的题面必须用用户实际回答的那道题。"""
+        if answer.question_key:
+            try:
+                return self.questions.by_key(answer.question_key).text
+            except KeyError:
+                pass
+        return self.questions.default_for_round(answer.round_no).text
+
+    def _answer_text(self, answer: Answer) -> str:
         if answer.answer_type == "option" and answer.option_key:
-            question = config.by_round(answer.round_no)
-            for option in question.options:
-                if option.key == answer.option_key:
-                    return option.label
+            if answer.question_key:
+                try:
+                    question = self.questions.by_key(answer.question_key)
+                    for option in question.options:
+                        if option.key == answer.option_key:
+                            return option.label
+                except KeyError:
+                    pass
             return answer.option_key
         return answer.content or ""

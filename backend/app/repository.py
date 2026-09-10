@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session as OrmSession
 from app.models import Answer, Quote, QuoteStatus, Session
 
 
-def create_session(db: OrmSession, status: str, current_round: int) -> Session:
-    row = Session(status=status, current_round=current_round)
+def create_session(db: OrmSession, status: str, current_round: int, active_question_key: str | None = None) -> Session:
+    row = Session(status=status, current_round=current_round, active_question_key=active_question_key)
     db.add(row)
     db.flush()
     return row
@@ -23,6 +23,11 @@ def get_session(db: OrmSession, session_id: str) -> Session | None:
 def update_session_state(db: OrmSession, session: Session, status: str, current_round: int) -> None:
     session.status = status
     session.current_round = current_round
+    db.flush()
+
+
+def set_active_question(db: OrmSession, session: Session, question_key: str) -> None:
+    session.active_question_key = question_key
     db.flush()
 
 
@@ -39,10 +44,12 @@ def add_answer(
     answer_type: str,
     option_key: str | None,
     content: str | None,
+    question_key: str | None = None,
 ) -> Answer:
     row = Answer(
         session_id=session_id,
         round_no=round_no,
+        question_key=question_key,
         answer_type=answer_type,
         option_key=option_key,
         content=content,

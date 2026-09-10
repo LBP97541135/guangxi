@@ -1,62 +1,78 @@
 import json
+from pathlib import Path
 
 import pytest
 
 from app.questions import QuestionsConfig, load_questions
 
 
-def _write(tmp_path, payload) -> str:
+def _write(tmp_path, payload) -> Path:
     path = tmp_path / "questions.json"
     path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     return path
 
 
+def _question(round_no: int, key: str, **extra) -> dict:
+    payload = {
+        "round": round_no,
+        "key": key,
+        "text": f"第{round_no}问：{key}？",
+        "options": [{"key": "c1", "label": "甲"}, {"key": "c2", "label": "乙"}],
+        "allowFreeText": True,
+    }
+    payload.update(extra)
+    return payload
+
+
 def _valid_payload() -> dict:
     return {
         "questions": [
-            {
-                "round": 1,
-                "key": "q1",
-                "text": "第一问？",
-                "options": [{"key": "a", "label": "甲"}, {"key": "b", "label": "乙"}],
-                "allowFreeText": True,
-            },
-            {
-                "round": 2,
-                "key": "q2",
-                "text": "第二问？",
-                "options": [{"key": "c", "label": "丙"}],
-                "allowFreeText": False,
-            },
-            {
-                "round": 3,
-                "key": "q3",
-                "text": "第三问？",
-                "options": [],
-                "allowFreeText": True,
-            },
+            _question(1, "q1", title="题一", sceneExample="示例画面一"),
+            _question(2, "q2"),
+            _question(3, "q3"),
         ]
     }
 
 
-def test_placeholder_config_loads():
-    config = load_questions(__import__("pathlib").Path("config/questions.json"))
+def test_placeholder_config_loads_twelve_variants():
+    config = load_questions(Path("config/questions.json"))
 
-    assert [q.round for q in config.questions] == [1, 2, 3]
-    assert all(q.text for q in config.questions)
-    assert config.by_round(1).key == "surface_scene"
+    assert {q.round for q in config.questions} == {1, 2, 3}
+    assert len(config.questions) == 12
+    for round_no in (1, 2, 3):
+        variants = config.variants_for_round(round_no)
+        assert len(variants) == 4
+        for variant in variants:
+            assert variant.title
+            assert variant.scene_example
+            assert variant.allow_free_text is True
+            assert len(variant.options) == 4
+    assert config.default_for_round(1).key == "act1_door_lock"
 
 
 def test_valid_config_loads_as_typed_objects(tmp_path):
     config = load_questions(_write(tmp_path, _valid_payload()))
 
     assert len(config.questions) == 3
-    assert config.by_round(2).options[0].label == "丙"
+    second = config.by_key("q2")
+    assert second.options[0].label == "甲"
+    assert config.by_key("q1").title == "题一"
+    assert config.by_key("q1").scene_example == "示例画面一"
+
+
+def test_multiple_variants_per_round_valid(tmp_path):
+    payload = _valid_payload()
+    payload["questions"].append(_question(1, "q1b", title="备选"))
+
+    config = load_questions(_write(tmp_path, payload))
+
+    assert len(config.variants_for_round(1)) == 2
+    assert config.default_for_round(1).key == "q1"
 
 
 def test_missing_round_2_fails(tmp_path):
     payload = _valid_payload()
-    del payload["questions"][1]
+    payload["questions"] = [q for q in payload["questions"] if q["round"] != 2]
 
     with pytest.raises(Exception, match="1、2、3"):
         load_questions(_write(tmp_path, payload))
@@ -72,7 +88,7 @@ def test_duplicate_question_key_fails(tmp_path):
 
 def test_duplicate_option_key_fails(tmp_path):
     payload = _valid_payload()
-    payload["questions"][0]["options"][1]["key"] = "a"
+    payload["questions"][0]["options"][1]["key"] = "c1"
 
     with pytest.raises(Exception, match="选项 Key 重复"):
         load_questions(_write(tmp_path, payload))
@@ -80,6 +96,7 @@ def test_duplicate_option_key_fails(tmp_path):
 
 def test_unanswerable_question_fails(tmp_path):
     payload = _valid_payload()
+    payload["questions"][2]["options"] = []
     payload["questions"][2]["allowFreeText"] = False
 
     with pytest.raises(Exception, match="allowFreeText"):
@@ -94,8 +111,10 @@ def test_invalid_json_fails(tmp_path):
         load_questions(path)
 
 
-def test_by_round_missing_raises_key_error():
+def test_missing_round_or_key_raises_key_error():
     config = QuestionsConfig.model_validate(_valid_payload())
 
     with pytest.raises(KeyError):
-        config.by_round(9)
+        config.variants_for_round(9)
+    with pytest.raises(KeyError):
+        config.by_key("nope")

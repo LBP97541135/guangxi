@@ -1,6 +1,7 @@
 """三问配置：格式定义、加载与启动校验。
 
-配置文件为 config/questions.json，终稿文案由策划直接替换该文件。
+配置文件为 config/questions.json。每一轮允许配置多道情境题（"换个情境"
+在轮内切换），文案终稿由策划直接替换该文件。
 非法配置在启动时被发现，而不是用户请求时才报错。
 """
 
@@ -27,9 +28,11 @@ class QuestionDef(BaseModel):
 
     round: int
     key: str = Field(min_length=1)
+    title: str | None = None
     text: str = Field(min_length=1)
     options: list[QuestionOptionDef] = Field(default_factory=list)
     allow_free_text: bool = False
+    scene_example: str | None = None
 
     @model_validator(mode="after")
     def _validate_answerable(self) -> "QuestionDef":
@@ -46,19 +49,28 @@ class QuestionsConfig(BaseModel):
 
     @model_validator(mode="after")
     def _validate_rounds(self) -> "QuestionsConfig":
-        rounds = [q.round for q in self.questions]
-        if sorted(rounds) != [1, 2, 3]:
-            raise ValueError(f"三轮配置必须恰好包含轮次 1、2、3，实际为 {sorted(rounds)}")
+        rounds = {q.round for q in self.questions}
+        if rounds != {1, 2, 3}:
+            raise ValueError(f"三轮配置必须覆盖轮次 1、2、3，实际为 {sorted(rounds)}")
         keys = [q.key for q in self.questions]
         if len(keys) != len(set(keys)):
             raise ValueError("问题 Key 重复")
         return self
 
-    def by_round(self, round_no: int) -> QuestionDef:
+    def variants_for_round(self, round_no: int) -> list[QuestionDef]:
+        variants = [q for q in self.questions if q.round == round_no]
+        if not variants:
+            raise KeyError(f"配置中不存在轮次 {round_no}")
+        return variants
+
+    def default_for_round(self, round_no: int) -> QuestionDef:
+        return self.variants_for_round(round_no)[0]
+
+    def by_key(self, key: str) -> QuestionDef:
         for question in self.questions:
-            if question.round == round_no:
+            if question.key == key:
                 return question
-        raise KeyError(f"配置中不存在轮次 {round_no}")
+        raise KeyError(f"配置中不存在问题 {key}")
 
 
 def load_questions(path: Path) -> QuestionsConfig:

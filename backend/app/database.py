@@ -28,6 +28,27 @@ def make_session_factory(engine: Engine) -> sessionmaker:
 
 def init_db(engine: Engine) -> None:
     Base.metadata.create_all(engine)
+    _ensure_columns(engine)
+
+
+def _ensure_columns(engine: Engine) -> None:
+    """无迁移工具的轻量列补齐，让旧开发库也能启动（Demo 数据可随时删除重建）。"""
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+    tables = inspector.get_table_names()
+    additions = {
+        "session": {"active_question_key": "VARCHAR(64)"},
+        "answer": {"question_key": "VARCHAR(64)"},
+    }
+    with engine.begin() as conn:
+        for table, columns in additions.items():
+            if table not in tables:
+                continue
+            existing = {c["name"] for c in inspector.get_columns(table)}
+            for column, ddl in columns.items():
+                if column not in existing:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}"))
 
 
 def new_db_session(factory: sessionmaker) -> OrmSession:

@@ -46,17 +46,17 @@ def test_e2e_01_normal_path(client):
     created = client.post("/api/sessions")
     assert created.status_code == 201
     session_id = created.json()["sessionId"]
-    assert created.json()["question"]["key"] == "surface_scene"
+    assert created.json()["question"]["key"] == "act1_door_lock"
 
-    r1 = _submit(client, session_id, 1, {"type": "option", "optionKey": "alone"})
+    r1 = _submit(client, session_id, 1, {"type": "option", "optionKey": "c1"})
     assert r1.json()["status"] == "QUESTION_2"
-    assert r1.json()["question"]["key"] == "desire_layer"
+    assert r1.json()["question"]["key"] == "act2_say_ok"
 
     r2 = _submit(client, session_id, 2, {"type": "text", "content": "想搬去海边住一个月。"})
     assert r2.json()["status"] == "QUESTION_3"
 
     stub = _use_provider(client, GOOD_QUOTE)
-    r3 = _submit(client, session_id, 3, {"type": "option", "optionKey": "someone"})
+    r3 = _submit(client, session_id, 3, {"type": "option", "optionKey": "c1"})
     assert r3.status_code == 200
     assert r3.json()["status"] == "COMPLETED"
     quote = r3.json()["quote"]
@@ -71,16 +71,16 @@ def test_e2e_01_normal_path(client):
 # E2E-02 刷新恢复
 def test_e2e_02_refresh_recovery(client):
     session_id = client.post("/api/sessions").json()["sessionId"]
-    _submit(client, session_id, 1, {"type": "option", "optionKey": "conflict"})
+    _submit(client, session_id, 1, {"type": "option", "optionKey": "c2"})
 
     recovered = client.get(f"/api/sessions/{session_id}")
     assert recovered.status_code == 200
     body = recovered.json()
     assert body["status"] == "QUESTION_2"
     assert body["currentRound"] == 2
-    assert body["question"]["key"] == "desire_layer"
+    assert body["question"]["key"] == "act2_say_ok"
 
-    r2 = _submit(client, session_id, 2, {"type": "option", "optionKey": "leave"})
+    r2 = _submit(client, session_id, 2, {"type": "option", "optionKey": "c1"})
     assert r2.status_code == 200
     r3 = _submit(client, session_id, 3, {"type": "text", "content": "答案"})
     assert r3.json()["status"] == "COMPLETED"
@@ -90,14 +90,14 @@ def test_e2e_02_refresh_recovery(client):
 def test_e2e_03_duplicate_submission(client):
     session_id = client.post("/api/sessions").json()["sessionId"]
 
-    first = _submit(client, session_id, 1, {"type": "option", "optionKey": "alone"})
-    duplicate = _submit(client, session_id, 1, {"type": "option", "optionKey": "alone"})
+    first = _submit(client, session_id, 1, {"type": "option", "optionKey": "c1"})
+    duplicate = _submit(client, session_id, 1, {"type": "option", "optionKey": "c1"})
 
     assert first.status_code == 200
     assert duplicate.status_code == 409
     assert duplicate.json()["error"]["code"] == "ANSWER_ALREADY_EXISTS"
 
-    next_round = _submit(client, session_id, 2, {"type": "option", "optionKey": "rest"})
+    next_round = _submit(client, session_id, 2, {"type": "option", "optionKey": "c1"})
     assert next_round.status_code == 200
     assert next_round.json()["status"] == "QUESTION_3"
 
@@ -105,8 +105,8 @@ def test_e2e_03_duplicate_submission(client):
 # E2E-04 模型失败恢复
 def test_e2e_04_model_failure_recovery(client):
     session_id = client.post("/api/sessions").json()["sessionId"]
-    _submit(client, session_id, 1, {"type": "option", "optionKey": "alone"})
-    _submit(client, session_id, 2, {"type": "option", "optionKey": "rest"})
+    _submit(client, session_id, 1, {"type": "option", "optionKey": "c1"})
+    _submit(client, session_id, 2, {"type": "option", "optionKey": "c1"})
 
     stub = _use_provider(client, INVALID_SAMPLES["forbidden"], INVALID_SAMPLES["forbidden"])
     r3 = _submit(client, session_id, 3, {"type": "text", "content": "答案"})
@@ -129,8 +129,8 @@ def test_e2e_04_model_failure_recovery(client):
 @pytest.mark.parametrize("sample", INVALID_SAMPLES.values(), ids=INVALID_SAMPLES.keys())
 def test_e2e_05_invalid_output_boundary(client, sample):
     session_id = client.post("/api/sessions").json()["sessionId"]
-    _submit(client, session_id, 1, {"type": "option", "optionKey": "alone"})
-    _submit(client, session_id, 2, {"type": "option", "optionKey": "rest"})
+    _submit(client, session_id, 1, {"type": "option", "optionKey": "c1"})
+    _submit(client, session_id, 2, {"type": "option", "optionKey": "c1"})
 
     stub = _use_provider(client, sample, sample)
     response = _submit(client, session_id, 3, {"type": "text", "content": "答案"})
@@ -144,8 +144,8 @@ def test_e2e_05_invalid_output_boundary(client, sample):
 
 def test_e2e_timeout_boundary(client):
     session_id = client.post("/api/sessions").json()["sessionId"]
-    _submit(client, session_id, 1, {"type": "option", "optionKey": "alone"})
-    _submit(client, session_id, 2, {"type": "option", "optionKey": "rest"})
+    _submit(client, session_id, 1, {"type": "option", "optionKey": "c1"})
+    _submit(client, session_id, 2, {"type": "option", "optionKey": "c1"})
 
     timeout = ModelCallError("MODEL_TIMEOUT", "模型调用超时")
     stub = _use_provider(client, timeout, timeout)
@@ -163,6 +163,7 @@ def test_openapi_contract(client):
         "/api/sessions": {"post"},
         "/api/sessions/{session_id}": {"get"},
         "/api/sessions/{session_id}/answers": {"post"},
+        "/api/sessions/{session_id}/questions/switch": {"post"},
         "/api/sessions/{session_id}/retry": {"post"},
         "/api/health": {"get"},
     }

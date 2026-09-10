@@ -97,3 +97,17 @@ def retry_generation(
 ) -> SessionOut:
     coordinator = request.app.state.generation_service
     return coordinator.retry(db, session_id)
+
+
+@router.post(
+    "/sessions/{session_id}/questions/switch",
+    response_model=SessionOut,
+    summary="换个情境：切换本轮问题",
+    responses={404: {"description": "会话不存在"}, 409: {"description": "会话状态不允许切换"}},
+)
+def switch_question(
+    session_id: str,
+    db: OrmSession = Depends(get_db),
+    questions=Depends(get_questions),
+) -> SessionOut:
+    return session_service.switch_question(db, questions, session_id)

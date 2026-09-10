@@ -29,14 +29,13 @@ from app.questions import QuestionDef, QuestionsConfig
 from app.schemas import AnswerIn, SessionOut, SessionStatus
 from app.services import generation, session_service
 from app.services.generation import QuoteGenerationError
+from app.services.session_service import OPEN_STATES
 
 _TRANSITIONS: dict[int, tuple[SessionStatus, int]] = {
     1: (SessionStatus.QUESTION_2, 2),
     2: (SessionStatus.QUESTION_3, 3),
     3: (SessionStatus.GENERATING, 3),
 }
-
-_OPEN_STATES = (SessionStatus.QUESTION_1, SessionStatus.QUESTION_2, SessionStatus.QUESTION_3)
 
 
 class FlowService:
@@ -56,7 +55,7 @@ class FlowService:
             raise ApiError(status_code=404, code=SESSION_NOT_FOUND, message="会话不存在或已失效")
 
         status = SessionStatus(row.status)
-        if status not in _OPEN_STATES:
+        if status not in OPEN_STATES:
             raise ApiError(
                 status_code=409,
                 code=INVALID_SESSION_STATE,
@@ -75,11 +74,14 @@ class FlowService:
                 message=f"当前应回答第 {row.current_round} 轮",
             )
 
-        question = self.questions.by_round(row.current_round)
+        question = session_service.resolve_active_question(self.questions, row)
         answer_type, option_key, content = self._validate_answer(question, answer)
 
         try:
-            repo.add_answer(db, session_id, round_no, answer_type, option_key, content)
+            repo.add_answer(
+                db, session_id, round_no, answer_type, option_key, content,
+                question_key=question.key,
+            )
         except IntegrityError as exc:
             raise ApiError(
                 status_code=409,
@@ -89,6 +91,8 @@ class FlowService:
 
         next_status, next_round = _TRANSITIONS[round_no]
         repo.update_session_state(db, row, next_status.value, next_round)
+        if next_status in OPEN_STATES:
+            repo.set_active_question(db, row, self.questions.default_for_round(next_round).key)
 
         if round_no == 3:
             try:
