@@ -12,10 +12,9 @@ from typing import Protocol
 from sqlalchemy.orm import Session as OrmSession
 
 from app import repository as repo
+from app.llm.fake import FAKE_QUOTE
 from app.models import Session as SessionRow
 from app.schemas import SessionStatus
-
-FAKE_QUOTE = "其实，你只是还没和自己好好和解。"
 
 
 class QuoteGenerationError(Exception):
