@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>光隙 LIGHT GAP · 撕掉标签，拼出真我</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ================= 阶段 1: 开屏沉浸（素材占位，视觉素材替换 .splash-visual 内容即可） ================= -->
+  <div id="splash-stage" class="stage-view">
+    <div class="splash-labels" id="splash-labels"><!-- 标签压迫层：JS 注入 --></div>
+    <div class="splash-visual" data-asset="SPLASH_SILHOUETTE（人物剪影/视频素材位）">
+      <div class="splash-figure"></div>
+    </div>
+    <div class="splash-lines" id="splash-lines"></div>
+    <button id="splash-enter-btn" class="welcome-action-btn">轮到你了</button>
+    <button id="splash-skip-btn" class="splash-skip">跳过开场 ✕</button>
+  </div>
+
+  <!-- ================= 阶段 2: 光隙入口 ================= -->
+  <div id="portal-stage" class="stage-view">
+    <div class="portal-container" id="portal-touch-area">
+      <div class="portal-back">
+        <div class="portal-title">光隙</div>
+        <div class="portal-subtitle">撕掉标签 · 拼出真我</div>
+      </div>
+      <div class="door-left" id="door-left"></div>
+      <div class="door-right" id="door-right"></div>
+      <div class="light-slit" id="light-slit"></div>
+    </div>
+    <div class="portal-hint" id="portal-hint">✦ 按住并向两侧拉开光缝 ✦</div>
+  </div>
+
+  <!-- ================= 阶段 3: 向导迎候（立绘素材位：.angel-avatar 内替换） ================= -->
+  <div id="welcome-stage" class="stage-view">
+    <div class="angel-avatar" data-asset="GUIDE_ART（向导立绘素材位）">
+      <div class="angel-halo"></div>
+      <div class="angel-orb"></div>
+    </div>
+    <div class="angel-name-badge">✦ 光隙向导 · 提灯者 ✦</div>
+    <div class="welcome-text-wrap" id="welcome-text"></div>
+    <button class="welcome-action-btn" id="welcome-action-btn">「 终于能松一口气了，坐下歇歇 ☕ 」</button>
+  </div>
+
+  <!-- ================= 阶段 4: 三轮对话 ================= -->
+  <div id="dialog-stage" class="stage-view">
+    <div class="angel-companion-bar">
+      <div class="mini-angel">
+        <div class="mini-orb"></div>
+        <span class="mini-guide-text" id="mini-guide-cue">向导正提着灯走在你的身侧...</span>
+      </div>
+      <div class="step-indicator">
+        <div class="step-dot" id="dot-1"></div>
+        <div class="step-dot" id="dot-2"></div>
+        <div class="step-dot" id="dot-3"></div>
+      </div>
+    </div>
+
+    <div class="rpg-dialog-box" id="dialog-box">
+      <div class="speaker-meta">
+        <div class="speaker-tag" id="speaker-name">向导轻声问</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button id="switch-question-btn" class="ghost-btn">🍃 换个情境</button>
+          <span class="skip-typing-hint" id="skip-btn">点击快进 ▾</span>
+        </div>
+      </div>
+
+      <div class="dialog-content">
+        <span id="typewriter-text"></span>
+        <span class="typing-cursor" id="cursor"></span>
+      </div>
+
+      <!-- 生成失败的恢复视图（默认隐藏） -->
+      <div id="failed-view" class="failed-view" hidden>
+        <div class="failed-title">灯影晃了晃，金句没能凝成。</div>
+        <div class="failed-sub">你的三次回答都还在，不必重答。</div>
+        <button id="failed-retry-btn" class="send-btn failed-retry">再试一次</button>
+      </div>
+
+      <div id="answer-area">
+        <div class="inspiration-shelf" id="inspiration-shelf">
+          <span class="shelf-label">向导隐隐看见的画面：</span>
+        </div>
+
+        <div class="input-complex">
+          <div class="input-row">
+            <button class="mic-btn" id="mic-btn" title="对向导轻声倾诉（语音转文字）">🎙️</button>
+            <input type="text" id="user-custom-input" class="custom-input"
+                   placeholder="用自己的话说说看……" maxlength="200">
+            <button id="send-custom-btn" class="send-btn">交付真我</button>
+          </div>
+          <div class="actions-bar">
+            <button class="ai-assist-btn" id="ai-assist-btn" hidden>
+              <span>✨</span><span id="ai-btn-text">让向导替我显影电影镜头</span>
+            </button>
+            <span class="speech-status" id="speech-status">向导在此守护，绝无任何标签与评判</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 阶段 5: 凝光生成 ================= -->
+  <div id="generating-stage" class="stage-view">
+    <div class="condensing-angel-wrap">
+      <div class="condensing-light" data-asset="CONDENSE_LIGHT（光尘粒子素材位）"></div>
+      <div class="gen-text" id="gen-text">
+        向导正在把散落的碎光捧在手心...<br>
+        为你凝结一句不被分类的真我
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 阶段 6: 金句卡片 ================= -->
+  <div id="result-stage" class="stage-view">
+    <div class="card-container">
+      <div class="golden-card" id="golden-card">
+        <div class="card-header">
+          <span>LIGHT GAP · 灵魂金句</span>
+          <span class="card-badge" id="card-id">LG-00000000</span>
+        </div>
+        <div class="card-body">
+          <div class="card-quote-mark">“</div>
+          <div class="card-sentence" id="golden-sentence-text"></div>
+        </div>
+        <div class="card-footer-art" data-asset="CARD_BG（水彩背景素材位）"></div>
+        <div class="card-info-bar">
+          <span>向导为你提灯看见的真我</span>
+          <span id="card-date">2026.09.10</span>
+        </div>
+      </div>
+
+      <div class="result-actions">
+        <button class="action-btn btn-primary" id="copy-quote-btn">复制文字</button>
+        <button class="action-btn btn-primary" id="save-card-btn">下载卡片</button>
+        <button class="action-btn btn-outline" id="restart-btn">再次探访光隙</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="vendor/html2canvas.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

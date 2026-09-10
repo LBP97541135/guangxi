@@ -1,6 +1,15 @@
 # 光隙后端
 
-三轮对话 + 金句生成的 Demo 后端。架构与任务拆分见 [docs/](../docs/)。
+三轮对话 + 金句生成的 Demo 后端（同仓附带前端页面）。架构与任务拆分见 [docs/](../docs/)。
+
+## 前端页面
+
+仓库根目录的 `frontend/` 是无构建单页前端（原生 HTML/CSS/JS），由后端进程直接托管：
+启动后端后访问 http://127.0.0.1:8000/ 即可完整体验（开屏 → 拉开光隙 → 三轮对话 → 金句卡片）。
+
+- 前端文案占位集中在 `frontend/app.js` 顶部常量，策划可直接修改。
+- 视觉素材位在页面中以 `data-asset` 标注（开屏剪影、向导立绘、水彩卡背景等），替换即可，不用改代码。
+- 也可脱离后端单独托管 `frontend/`（任意静态服务器），此时依赖 `ALLOW_CORS_ORIGINS` 放开跨域。
 
 ## 接口一览
 
@@ -11,6 +20,7 @@
 | `POST` | `/api/sessions` | 创建匿名会话，返回第一问（201） |
 | `GET` | `/api/sessions/{session_id}` | 查询当前进度或最终金句（刷新恢复） |
 | `POST` | `/api/sessions/{session_id}/answers` | 提交当前轮答案；第三轮后生成金句 |
+| `POST` | `/api/sessions/{session_id}/questions/switch` | 换个情境：切换本轮问题 |
 | `POST` | `/api/sessions/{session_id}/retry` | 生成失败后重新生成 |
 | `GET` | `/api/health` | 健康检查 |
 
