@@ -10,18 +10,7 @@
 
 <div id="app">
 
-  <!-- ================= 阶段 1: 开屏沉浸（素材占位，视觉素材替换 .splash-visual 内容即可） ================= -->
-  <div id="splash-stage" class="stage-view">
-    <div class="splash-labels" id="splash-labels"><!-- 标签压迫层：JS 注入 --></div>
-    <div class="splash-visual" data-asset="SPLASH_SILHOUETTE（人物剪影/视频素材位）">
-      <div class="splash-figure"></div>
-    </div>
-    <div class="splash-lines" id="splash-lines"></div>
-    <button id="splash-enter-btn" class="welcome-action-btn">轮到你了</button>
-    <button id="splash-skip-btn" class="splash-skip">跳过开场 ✕</button>
-  </div>
-
-  <!-- ================= 阶段 2: 光隙入口 ================= -->
+  <!-- ================= 阶段 1: 光隙入口 ================= -->
   <div id="portal-stage" class="stage-view">
     <div class="portal-container" id="portal-touch-area">
       <div class="portal-back">
@@ -35,7 +24,7 @@
     <div class="portal-hint" id="portal-hint">✦ 按住并向两侧拉开光缝 ✦</div>
   </div>
 
-  <!-- ================= 阶段 3: 向导迎候（立绘素材位：.angel-avatar 内替换） ================= -->
+  <!-- ================= 阶段 2: 向导迎候（立绘素材位：.angel-avatar 内替换） ================= -->
   <div id="welcome-stage" class="stage-view">
     <div class="angel-avatar" data-asset="GUIDE_ART（向导立绘素材位）">
       <div class="angel-halo"></div>
@@ -46,7 +35,7 @@
     <button class="welcome-action-btn" id="welcome-action-btn">「 终于能松一口气了，坐下歇歇 ☕ 」</button>
   </div>
 
-  <!-- ================= 阶段 4: 三轮对话 ================= -->
+  <!-- ================= 阶段 3: 三轮对话 ================= -->
   <div id="dialog-stage" class="stage-view">
     <div class="angel-companion-bar">
       <div class="mini-angel">
@@ -104,7 +93,7 @@
     </div>
   </div>
 
-  <!-- ================= 阶段 5: 凝光生成 ================= -->
+  <!-- ================= 阶段 4: 凝光生成 ================= -->
   <div id="generating-stage" class="stage-view">
     <div class="condensing-angel-wrap">
       <div class="condensing-light" data-asset="CONDENSE_LIGHT（光尘粒子素材位）"></div>
@@ -115,7 +104,7 @@
     </div>
   </div>
 
-  <!-- ================= 阶段 6: 金句卡片 ================= -->
+  <!-- ================= 阶段 5: 金句卡片 ================= -->
   <div id="result-stage" class="stage-view">
     <div class="card-container">
       <div class="golden-card" id="golden-card">

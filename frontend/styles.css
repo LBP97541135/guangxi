@@ -53,115 +53,7 @@ body, html {
   pointer-events: auto;
 }
 
-/* ================= 阶段 1: 开屏沉浸 ================= */
-#splash-stage {
-  background: radial-gradient(circle at center, #12092a 0%, #05020c 100%);
-  padding: 24px;
-}
-
-.splash-labels {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.splash-label {
-  position: absolute;
-  padding: 6px 16px;
-  border: 1px solid rgba(155, 140, 194, 0.35);
-  border-radius: 20px;
-  color: rgba(155, 140, 194, 0.8);
-  font-size: 13px;
-  letter-spacing: 3px;
-  background: rgba(20, 12, 40, 0.5);
-  animation: labelDrift 6s ease-in-out infinite alternate;
-}
-
-@keyframes labelDrift {
-  0% { transform: translateY(0) rotate(-1deg); opacity: 0.5; }
-  100% { transform: translateY(-14px) rotate(1.5deg); opacity: 0.9; }
-}
-
-.splash-visual {
-  position: relative;
-  width: 150px;
-  height: 190px;
-  margin-bottom: 34px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: 2;
-}
-
-/* 人物剪影占位：视觉素材到位后替换 .splash-figure 为 <img>/<video> */
-.splash-figure {
-  width: 110px;
-  height: 170px;
-  border-radius: 55px 55px 18px 18px;
-  background: linear-gradient(180deg, rgba(20, 10, 45, 0.2) 0%, rgba(8, 4, 18, 0.95) 70%);
-  box-shadow: 0 0 60px 18px rgba(245, 166, 35, 0.12), inset 0 -20px 40px rgba(0, 0, 0, 0.8);
-  animation: figureBreathe 4s ease-in-out infinite alternate;
-}
-
-@keyframes figureBreathe {
-  0% { transform: scale(0.98); opacity: 0.85; }
-  100% { transform: scale(1.03); opacity: 1; }
-}
-
-.splash-lines {
-  position: relative;
-  z-index: 2;
-  max-width: 520px;
-  min-height: 130px;
-  text-align: center;
-  font-size: 16px;
-  line-height: 2.2;
-  color: #d9cdf2;
-  letter-spacing: 1px;
-  font-weight: 300;
-  margin-bottom: 30px;
-}
-
-.splash-line {
-  opacity: 0;
-  transform: translateY(10px);
-  transition: all 1.1s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.splash-line.show {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-#splash-enter-btn {
-  position: relative;
-  z-index: 2;
-}
-
-.splash-skip {
-  position: absolute;
-  top: 22px;
-  right: 24px;
-  z-index: 3;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: var(--text-muted);
-  border-radius: 16px;
-  padding: 6px 14px;
-  font-size: 12px;
-  letter-spacing: 1px;
-  cursor: pointer;
-  transition: all 0.25s;
-}
-
-.splash-skip:hover {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-/* ================= 阶段 2: 光隙入口 ================= */
+/* ================= 阶段 1: 光隙入口 ================= */
 #portal-stage {
   background: radial-gradient(circle at center, #1b1236 0%, #07040e 100%);
   cursor: ew-resize;
@@ -258,7 +150,7 @@ body, html {
   50% { opacity: 0.95; transform: translateY(-4px); }
 }
 
-/* ================= 阶段 3: 向导迎候 ================= */
+/* ================= 阶段 2: 向导迎候 ================= */
 #welcome-stage {
   background: radial-gradient(circle at center, #24144d 0%, #0b0617 80%, #04020a 100%);
   padding: 30px 24px;
@@ -361,7 +253,7 @@ body, html {
   pointer-events: none;
 }
 
-/* ================= 阶段 4: 三轮对话 ================= */
+/* ================= 阶段 3: 三轮对话 ================= */
 #dialog-stage {
   background: radial-gradient(circle at 50% 30%, #1c103a 0%, #070311 100%);
   padding: 20px;
@@ -689,7 +581,7 @@ body, html {
 }
 .failed-retry { margin-top: 4px; }
 
-/* ================= 阶段 5: 凝光生成 ================= */
+/* ================= 阶段 4: 凝光生成 ================= */
 #generating-stage {
   background: radial-gradient(circle at center, #231247 0%, #070311 100%);
 }
@@ -725,7 +617,7 @@ body, html {
   line-height: 2;
 }
 
-/* ================= 阶段 6: 金句卡片 ================= */
+/* ================= 阶段 5: 金句卡片 ================= */
 #result-stage {
   background: radial-gradient(circle at center, #1f143d 0%, #070311 100%);
   padding: 20px;

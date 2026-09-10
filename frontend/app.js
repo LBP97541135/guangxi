@@ -10,15 +10,6 @@ const WELCOME_MONOLOGUE =
   '把那些贴在你身上的标签都在门槛上抖落掉吧。在这里，只有微光和我，没有人会给你打分。\n' +
   '来，坐下来，先让我替你接住这份疲惫……';
 
-const SPLASH_LINES = [
-  '他们说你应该情绪稳定。',
-  '他们说你应该懂事、合群、随叫随到。',
-  '于是你把真实的自己，折叠进了很多个不为人知的角落。',
-  '直到今晚——有一道光，只为你留了一道缝。',
-];
-
-const SPLASH_LABELS = ['情绪稳定', '懂事', '合群', '随叫随到', '好脾气', '上进', '识大体', '不给人添麻烦'];
-
 const GEN_MIN_MS = 2200; // 凝光页最短停留，保证体感
 
 // ================= 工具 =================
@@ -114,7 +105,6 @@ const state = {
 };
 
 const STORAGE_KEY = 'guangxi_session_id';
-const SEEN_KEY = 'guangxi_splash_seen';
 
 function saveSession(id) {
   state.sessionId = id;
@@ -148,7 +138,7 @@ async function boot() {
       clearSession(); // 会话已失效，走新用户流程
     }
   }
-  enterSplash();
+  enterPortal();
 }
 
 function routeByStatus(snapshot) {
@@ -167,65 +157,7 @@ function routeByStatus(snapshot) {
   }
 }
 
-// ================= 阶段 1: 开屏 =================
-let splashTimers = [];
-
-function enterSplash() {
-  showStage('splash-stage');
-  splashTimers.forEach(clearTimeout);
-  splashTimers = [];
-
-  const seen = (() => { try { return localStorage.getItem(SEEN_KEY) === '1'; } catch (err) { return false; } })();
-  const lineDelay = seen ? 420 : 1500;
-  const startDelay = seen ? 500 : 1600;
-
-  const labelsEl = $('splash-labels');
-  labelsEl.innerHTML = '';
-  const count = seen ? 4 : SPLASH_LABELS.length;
-  for (let i = 0; i < count; i += 1) {
-    const label = document.createElement('span');
-    label.className = 'splash-label';
-    label.textContent = SPLASH_LABELS[i % SPLASH_LABELS.length];
-    label.style.left = `${8 + ((i * 37) % 70)}%`;
-    label.style.top = `${10 + ((i * 53) % 68)}%`;
-    label.style.animationDelay = `${(i * 0.7) % 3}s`;
-    labelsEl.appendChild(label);
-  }
-
-  const linesEl = $('splash-lines');
-  linesEl.innerHTML = '';
-  SPLASH_LINES.forEach((text) => {
-    const line = document.createElement('div');
-    line.className = 'splash-line';
-    line.textContent = text;
-    linesEl.appendChild(line);
-  });
-
-  splashTimers.push(setTimeout(() => {
-    linesEl.querySelectorAll('.splash-line').forEach((line, idx) => {
-      splashTimers.push(setTimeout(() => line.classList.add('show'), idx * lineDelay));
-    });
-  }, startDelay));
-
-  const btn = $('splash-enter-btn');
-  btn.classList.remove('show');
-  splashTimers.push(setTimeout(() => btn.classList.add('show'), startDelay + SPLASH_LINES.length * lineDelay + 500));
-
-  markSeen();
-}
-
-function markSeen() {
-  try { localStorage.setItem(SEEN_KEY, '1'); } catch (err) { /* ignore */ }
-}
-
-function leaveSplash() {
-  splashTimers.forEach(clearTimeout);
-  splashTimers = [];
-  markSeen();
-  enterPortal();
-}
-
-// ================= 阶段 2: 拉开光隙（带阻尼） =================
+// ================= 阶段 1: 拉开光隙（带阻尼） =================
 const portal = { target: 0, rendered: 0, dragging: false, moved: false, entered: false, startX: 0, raf: 0 };
 
 function enterPortal() {
@@ -304,7 +236,7 @@ function bindPortal() {
   });
 }
 
-// ================= 阶段 3: 向导迎候 =================
+// ================= 阶段 2: 向导迎候 =================
 let welcomeTyper = null;
 
 function enterWelcome() {
@@ -339,7 +271,7 @@ async function welcomeContinue() {
   enterDialog();
 }
 
-// ================= 阶段 4: 三轮对话 =================
+// ================= 阶段 3: 三轮对话 =================
 let questionTyper = null;
 
 function enterDialog(snapshot) {
@@ -588,7 +520,7 @@ function bindSpeech() {
   });
 }
 
-// ================= 阶段 5: 凝光生成 =================
+// ================= 阶段 4: 凝光生成 =================
 let generatingEntered = false;
 
 function enterGenerating(onDone) {
@@ -629,7 +561,7 @@ async function pollGenerating() {
   $('gen-text').innerHTML = '光凝了很久还没有成形……<br>你可以刷新页面再看看';
 }
 
-// ================= 阶段 6: 金句卡片 =================
+// ================= 阶段 5: 金句卡片 =================
 function enterResult(withMinWait) {
   const quote = state.quote;
   if (!quote) return;
@@ -718,9 +650,6 @@ function restartJourney() {
 
 // ================= 事件绑定与启动 =================
 function bindEvents() {
-  $('splash-enter-btn').addEventListener('click', leaveSplash);
-  $('splash-skip-btn').addEventListener('click', leaveSplash);
-
   bindPortal();
 
   $('welcome-text').addEventListener('click', () => {
