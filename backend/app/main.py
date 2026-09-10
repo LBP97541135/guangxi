@@ -50,6 +50,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             model=settings.model_name,
             prompt_builder=prompt_builder,
             timeout_seconds=settings.model_timeout_seconds,
+            reasoning_effort=settings.model_reasoning_effort,
         )
     else:
         provider = FakeQuoteProvider()

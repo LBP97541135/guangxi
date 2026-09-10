@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     model_base_url: str | None = None
     model_name: str | None = None
     model_timeout_seconds: float = 15.0
+    model_reasoning_effort: str | None = None
 
     quote_max_chars: int = 50
     answer_max_chars: int = 500

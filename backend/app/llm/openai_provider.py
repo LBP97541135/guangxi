@@ -24,25 +24,31 @@ class OpenAIProtocolProvider:
         prompt_builder: PromptBuilder,
         timeout_seconds: float = 15.0,
         client: httpx.Client | None = None,
+        reasoning_effort: str | None = None,
     ) -> None:
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.prompt_builder = prompt_builder
+        self.reasoning_effort = reasoning_effort
         self._client = client or httpx.Client(timeout=timeout_seconds)
 
     def generate(self, request: QuoteRequest) -> GenerationCandidate:
+        payload = {
+            "model": self.model,
+            "messages": self.prompt_builder.build_messages(request),
+            "temperature": 0.7,
+            "max_tokens": 1000,  # 推理模型的思考也会计入，留足余量
+            "stream": False,
+        }
+        if self.reasoning_effort:
+            # OpenAI 协议标准字段；推理模型用它控制思考档位，普通模型/网关可留空不发送
+            payload["reasoning_effort"] = self.reasoning_effort
         try:
             response = self._client.post(
                 f"{self.base_url}/chat/completions",
                 headers={"Authorization": f"Bearer {self.api_key}"},
-                json={
-                    "model": self.model,
-                    "messages": self.prompt_builder.build_messages(request),
-                    "temperature": 0.9,
-                    "max_tokens": 200,
-                    "stream": False,
-                },
+                json=payload,
             )
             response.raise_for_status()
         except httpx.HTTPError as exc:

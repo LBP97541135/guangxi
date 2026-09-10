@@ -12,10 +12,26 @@ from app.models import Base
 def create_engine_from_url(url: str) -> Engine:
     kwargs: dict = {}
     if url.startswith("sqlite"):
-        kwargs["connect_args"] = {"check_same_thread": False}
+        # timeout：SQLite 写锁的忙等待秒数，多用户演示时避免立刻报 database is locked
+        kwargs["connect_args"] = {"check_same_thread": False, "timeout": 30}
         if _is_memory_sqlite(url):
             kwargs["poolclass"] = StaticPool
-    return create_engine(url, **kwargs)
+    engine = create_engine(url, **kwargs)
+    if url.startswith("sqlite") and not _is_memory_sqlite(url):
+        _enable_sqlite_wal(engine)
+    return engine
+
+
+def _enable_sqlite_wal(engine: Engine) -> None:
+    """WAL 模式允许读写并发，显著降低演示期间的锁冲突。"""
+    from sqlalchemy import event
+
+    @event.listens_for(engine, "connect")
+    def _set_pragma(dbapi_connection, _record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.close()
 
 
 def _is_memory_sqlite(url: str) -> bool:

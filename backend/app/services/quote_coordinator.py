@@ -3,10 +3,10 @@
 职责边界：
 - 三轮答案不完整时绝不调用模型。
 - 每次用户生成动作最多调用模型两次（自动重试一次）。
-- 成功：Quote SUCCEEDED + Session COMPLETED（随请求事务提交）。
-- 失败：Quote FAILED + Session FAILED + 三轮答案保留，显式提交后抛出
-  QuoteGenerationError——失败状态必须落库，同时接口要返回业务错误，
-  因此这里不依赖请求结束时的统一提交。
+- 调用方在进入本服务前已提交答案与 GENERATING 状态（避免模型调用期间
+  持有 SQLite 写锁）；本服务自管事务：成功时 Quote SUCCEEDED +
+  Session COMPLETED 一并提交，失败时 Quote FAILED + Session FAILED +
+  三轮答案一并提交后抛出 QuoteGenerationError。
 """
 
 import logging
@@ -76,6 +76,7 @@ class QuoteGenerationCoordinator:
                 repo.update_session_state(
                     db, session_row, SessionStatus.COMPLETED.value, 3
                 )
+                db.commit()
                 return
             last_reason = f"validation:{reason}"
             logger.warning(

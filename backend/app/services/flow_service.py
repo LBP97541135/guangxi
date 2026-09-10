@@ -95,6 +95,9 @@ class FlowService:
             repo.set_active_question(db, row, self.questions.default_for_round(next_round).key)
 
         if round_no == 3:
+            # 先提交答案与 GENERATING 状态再调模型：不占着 SQLite 写锁等十几秒的模型响应，
+            # 多用户演示时其他请求才不会被 database is locked 挡住。
+            db.commit()
             try:
                 self.generation.run(db, row)
             except QuoteGenerationError as exc:
