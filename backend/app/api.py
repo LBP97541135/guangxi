@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session as OrmSession
 from app.error_codes import SESSION_NOT_FOUND
 from app.errors import ApiError
 from app.models import Session as SessionRow
-from app.schemas import CreateSessionRequest, SessionOut
+from app.schemas import CreateSessionRequest, SessionOut, SubmitAnswerRequest
 from app.services import session_service
 
 router = APIRouter()
@@ -66,3 +66,19 @@ def get_session(
     if out is None:
         raise ApiError(status_code=404, code=SESSION_NOT_FOUND, message="会话不存在或已失效")
     return out
+
+
+@router.post(
+    "/sessions/{session_id}/answers",
+    response_model=SessionOut,
+    summary="提交当前轮答案；第三轮后生成金句",
+    responses={404: {"description": "会话不存在"}},
+)
+def submit_answer(
+    session_id: str,
+    body: SubmitAnswerRequest,
+    request: Request,
+    db: OrmSession = Depends(get_db),
+) -> SessionOut:
+    flow = request.app.state.flow_service
+    return flow.submit_answer(db, session_id, body.round, body.answer)

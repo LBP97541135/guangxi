@@ -12,6 +12,8 @@ from app.error_codes import INVALID_PARAMS
 from app.errors import ApiError, api_error_handler, unhandled_error_handler
 from app.log import setup_logging
 from app.questions import load_questions
+from app.services.flow_service import FlowService
+from app.services.generation import FakeQuoteGenerationService
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -30,6 +32,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     init_db(engine)
     app.state.engine = engine
     app.state.session_factory = make_session_factory(engine)
+
+    app.state.generation_service = FakeQuoteGenerationService()
+    app.state.flow_service = FlowService(
+        settings=settings,
+        questions=app.state.questions,
+        generation_service=app.state.generation_service,
+    )
 
     app.include_router(api.router, prefix="/api")
 
