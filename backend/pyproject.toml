@@ -1,0 +1,19 @@
+[project]
+name = "guangxi-backend"
+version = "0.1.0"
+description = "光隙 Demo 后端：三轮对话与金句生成"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic-settings>=2.4",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "httpx>=0.27",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
