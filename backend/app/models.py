@@ -1,4 +1,4 @@
-"""ORM 模型：Session、Answer、Quote 三张业务表。
+"""ORM 模型：Session、Message、Quote 三张业务表。
 
 不提前增加用户、分享、图鉴等字段。数据唯一性由数据库约束保证。
 """
@@ -43,23 +43,25 @@ class Session(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     status: Mapped[str] = mapped_column(String(20), nullable=False)
-    current_round: Mapped[int] = mapped_column(nullable=False)
-    active_question_key: Mapped[str | None] = mapped_column(String(64))
+    # 用户如何收束本次相遇：user_active / user_still_talking / user_no_want / natural_close
+    end_kind: Mapped[str | None] = mapped_column(String(32))
     created_at: Mapped[datetime] = mapped_column(default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow)
 
 
-class Answer(Base):
-    __tablename__ = "answer"
-    __table_args__ = (UniqueConstraint("session_id", "round_no", name="uq_answer_session_round"),)
+class Message(Base):
+    """用户说的话（或向导的固定回复，role 区分）。
+    开放式聊天，没有固定轮次，seq 是会话内的递增序号。
+    """
+
+    __tablename__ = "message"
+    __table_args__ = (UniqueConstraint("session_id", "seq", name="uq_message_session_seq"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     session_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
-    round_no: Mapped[int] = mapped_column(nullable=False)
-    question_key: Mapped[str | None] = mapped_column(String(64))
-    answer_type: Mapped[str] = mapped_column(String(20), nullable=False)
-    option_key: Mapped[str | None] = mapped_column(String(64))
-    content: Mapped[str | None]
+    seq: Mapped[int] = mapped_column(nullable=False)
+    role: Mapped[str] = mapped_column(String(20), nullable=False)  # 'user' | 'guide'
+    content: Mapped[str] = mapped_column(nullable=False)
     created_at: Mapped[datetime] = mapped_column(default=_utcnow)
 
 

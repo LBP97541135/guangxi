@@ -1,13 +1,14 @@
-"""金句校验器：非空、前缀、字数、禁词与分类式表达。
+"""金句校验器：非空、字数、禁词与分类式表达。
 
-候选金句必须全部通过才可保存。校验失败原因用于日志辨识。
+校验失败原因用于日志辨识。不再校验固定前缀——远行鼓励可以以任何句子起头。
 """
 
 import re
 
 
 class QuoteValidator:
-    PREFIX = "其实，你"
+    MAX_LEN_DEFAULT = 120
+    MIN_LEN = 4
 
     MBTI_TYPES = (
         "INTJ", "INTP", "ENTJ", "ENTP",
@@ -32,7 +33,7 @@ class QuoteValidator:
         re.compile(r"你是.{0,6}类人"),
     )
 
-    def __init__(self, max_chars: int = 50) -> None:
+    def __init__(self, max_chars: int = MAX_LEN_DEFAULT) -> None:
         self.max_chars = max_chars
 
     def validate(self, text: str | None) -> tuple[bool, str]:
@@ -40,10 +41,8 @@ class QuoteValidator:
         if text is None or not text.strip():
             return False, "empty"
         value = text.strip()
-
-        if not value.startswith(self.PREFIX):
-            return False, "prefix"
-
+        if len(value) < self.MIN_LEN:
+            return False, f"too_short:{len(value)}<{self.MIN_LEN}"
         if len(value) > self.max_chars:
             return False, f"too_long:{len(value)}>{self.max_chars}"
 
@@ -58,4 +57,5 @@ class QuoteValidator:
             if pattern.search(value):
                 return False, f"classification:{pattern.pattern}"
 
+        # 排除模型直接输出"其实，你"前缀：太机械。但允许偶尔带，所以只警告不拒。
         return True, ""

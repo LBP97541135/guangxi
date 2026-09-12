@@ -3,14 +3,14 @@
 事务边界由服务层控制：调用方在业务事务完成后统一 commit。
 """
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session as OrmSession
 
-from app.models import Answer, Quote, QuoteStatus, Session
+from app.models import Message, Quote, QuoteStatus, Session
 
 
-def create_session(db: OrmSession, status: str, current_round: int, active_question_key: str | None = None) -> Session:
-    row = Session(status=status, current_round=current_round, active_question_key=active_question_key)
+def create_session(db: OrmSession, status: str) -> Session:
+    row = Session(status=status)
     db.add(row)
     db.flush()
     return row
@@ -20,49 +20,42 @@ def get_session(db: OrmSession, session_id: str) -> Session | None:
     return db.get(Session, session_id)
 
 
-def update_session_state(db: OrmSession, session: Session, status: str, current_round: int) -> None:
+def update_session_state(db: OrmSession, session: Session, status: str, end_kind: str | None = None) -> None:
     session.status = status
-    session.current_round = current_round
+    if end_kind is not None:
+        session.end_kind = end_kind
     db.flush()
 
 
-def set_active_question(db: OrmSession, session: Session, question_key: str) -> None:
-    session.active_question_key = question_key
-    db.flush()
-
-
-def get_answer(db: OrmSession, session_id: str, round_no: int) -> Answer | None:
-    return db.scalar(
-        select(Answer).where(Answer.session_id == session_id, Answer.round_no == round_no)
+def next_message_seq(db: OrmSession, session_id: str) -> int:
+    """下一个消息序号；空会话从 1 开始。"""
+    current = db.scalar(
+        select(func.coalesce(func.max(Message.seq), 0)).where(Message.session_id == session_id)
     )
+    return int(current) + 1
 
 
-def add_answer(
-    db: OrmSession,
-    session_id: str,
-    round_no: int,
-    answer_type: str,
-    option_key: str | None,
-    content: str | None,
-    question_key: str | None = None,
-) -> Answer:
-    row = Answer(
-        session_id=session_id,
-        round_no=round_no,
-        question_key=question_key,
-        answer_type=answer_type,
-        option_key=option_key,
-        content=content,
-    )
+def add_message(db: OrmSession, session_id: str, seq: int, role: str, content: str) -> Message:
+    row = Message(session_id=session_id, seq=seq, role=role, content=content)
     db.add(row)
     db.flush()
     return row
 
 
-def list_answers(db: OrmSession, session_id: str) -> list[Answer]:
+def list_messages(db: OrmSession, session_id: str) -> list[Message]:
     return list(
         db.scalars(
-            select(Answer).where(Answer.session_id == session_id).order_by(Answer.round_no)
+            select(Message).where(Message.session_id == session_id).order_by(Message.seq)
+        )
+    )
+
+
+def user_messages(db: OrmSession, session_id: str) -> list[Message]:
+    return list(
+        db.scalars(
+            select(Message)
+            .where(Message.session_id == session_id, Message.role == "user")
+            .order_by(Message.seq)
         )
     )
 

@@ -1,4 +1,5 @@
-"""前后端联调契约：会话状态、请求/响应 Schema。字段以 camelCase 输出。"""
+"""前后端联调契约：会话状态、请求/响应 Schema。字段以 camelCase 输出。
+"""
 
 from enum import Enum
 from typing import Literal
@@ -12,34 +13,29 @@ class CamelModel(BaseModel):
 
 
 class SessionStatus(str, Enum):
-    QUESTION_1 = "QUESTION_1"
-    QUESTION_2 = "QUESTION_2"
-    QUESTION_3 = "QUESTION_3"
+    OPEN_CHAT = "OPEN_CHAT"
     GENERATING = "GENERATING"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
 
 
-AnswerType = Literal["option", "text"]
-
-
-class OptionOut(CamelModel):
-    key: str
-    label: str
-
-
-class QuestionOut(CamelModel):
-    key: str
-    title: str | None = None
-    text: str
-    options: list[OptionOut]
-    allow_free_text: bool
-    scene_example: str | None = None
+class EndKind(str, Enum):
+    USER_ACTIVE = "user_active"          # 用户主动结束
+    USER_STILL_TALKING = "user_still_talking"  # 用户还在犹豫
+    USER_NO_WANT = "user_no_want"        # 用户明确不想说
+    NATURAL_CLOSE = "natural_close"      # 自然收束
 
 
 class QuoteOut(CamelModel):
     id: str
     content: str
+
+
+class MessageOut(CamelModel):
+    seq: int
+    role: str
+    content: str
+    created_at: str
 
 
 class SessionOut(CamelModel):
@@ -50,24 +46,20 @@ class SessionOut(CamelModel):
             "examples": [
                 {
                     "sessionId": "01993f7b-8c1a-7de2-9f3a-1b2c3d4e5f60",
-                    "status": "QUESTION_1",
-                    "currentRound": 1,
-                    "question": {
-                        "key": "surface_scene",
-                        "text": "最近有没有一个瞬间，让你突然觉得自己不像平时的自己？",
-                        "options": [{"key": "alone", "label": "一个人时"}],
-                        "allowFreeText": True,
-                    },
+                    "status": "OPEN_CHAT",
+                    "messages": [
+                        {"seq": 1, "role": "guide", "content": "最近，有什么事一直挂在心上吗？"},
+                        {"seq": 2, "role": "user",  "content": "最近有点迷茫，不知道下一步该往哪走。"},
+                    ],
                     "quote": None,
                 },
                 {
-                    "sessionId": "01993f80-1a2b-7c3d-9e4f-5a6b7c8d9e0f",
+                    "sessionId": "01993f81-2b3c-7d4e-8f5a-6b7c8d9e0f1a",
                     "status": "COMPLETED",
-                    "currentRound": 3,
-                    "question": None,
+                    "messages": [],
                     "quote": {
-                        "id": "01993f81-2b3c-7d4e-8f5a-6b7c8d9e0f1a",
-                        "content": "其实，你不是习惯沉默，只是总把自己的风雨藏在别人屋檐之外。",
+                        "id": "01993f81-2b3c-7d4e-8f5a-6b7c8d9e0f1b",
+                        "content": "不必今天就把整条路看清。先走到下一盏灯下，再决定往哪里去。",
                     },
                 },
             ]
@@ -76,34 +68,23 @@ class SessionOut(CamelModel):
 
     session_id: str
     status: SessionStatus
-    current_round: int
-    question: QuestionOut | None = None
+    end_kind: EndKind | None = None
+    messages: list[MessageOut] = []
     quote: QuoteOut | None = None
 
 
-class AnswerIn(CamelModel):
-    type: AnswerType
-    option_key: str | None = None
-    content: str | None = None
+class MessageIn(CamelModel):
+    """用户消息。开放式聊天，永远是 free text，不带 round 概念。"""
 
-    @model_validator(mode="after")
-    def _validate_shape(self) -> "AnswerIn":
-        if self.type == "option":
-            if not self.option_key:
-                raise ValueError("快捷选项回答必须提供 optionKey")
-            if self.content is not None:
-                raise ValueError("快捷选项回答不应携带 content")
-        else:
-            if self.content is None or not self.content.strip():
-                raise ValueError("自由文本回答必须提供非空 content")
-            if self.option_key is not None:
-                raise ValueError("自由文本回答不应携带 optionKey")
-        return self
+    content: str = Field(min_length=1, max_length=2000)
 
 
-class SubmitAnswerRequest(CamelModel):
-    round: int = Field(ge=1, le=3)
-    answer: AnswerIn
+class SubmitMessageRequest(CamelModel):
+    message: MessageIn
+
+
+class EndRequest(CamelModel):
+    end_kind: EndKind
 
 
 class CreateSessionRequest(CamelModel):
@@ -112,3 +93,10 @@ class CreateSessionRequest(CamelModel):
 
 class RetryRequest(CamelModel):
     pass
+
+
+# 兼容旧 API：保留 AnswerIn 形状但只接 content；新代码请用 MessageIn
+class AnswerIn(CamelModel):
+    type: Literal["text"] = "text"
+    option_key: str | None = None
+    content: str = Field(min_length=1, max_length=2000)

@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     model_base_url: str | None = None
     model_name: str | None = None
     model_timeout_seconds: float = 15.0
+    model_max_tokens: int = 3000
     model_reasoning_effort: str | None = None
 
     quote_max_chars: int = 50
@@ -40,6 +41,13 @@ class Settings(BaseSettings):
     def _validate_positive(cls, value, info):
         if value <= 0:
             raise ValueError(f"{info.field_name} 必须为正数")
+        return value
+
+    @field_validator("model_max_tokens")
+    @classmethod
+    def _validate_max_tokens(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError("model_max_tokens 必须为正数")
         return value
 
 

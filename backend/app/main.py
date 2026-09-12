@@ -18,7 +18,6 @@ from app.llm.openai_provider import OpenAIProtocolProvider
 from app.llm.prompt import PromptBuilder, load_system_rules
 from app.llm.validator import QuoteValidator
 from app.log import setup_logging
-from app.questions import load_questions
 from app.services.flow_service import FlowService
 from app.services.quote_coordinator import QuoteGenerationCoordinator
 
@@ -29,11 +28,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(
         title="光隙 API",
-        description="三轮对话与金句生成 Demo 后端",
-        version="0.1.0",
+        description="开放式聊天 + 远行鼓励生成 Demo 后端",
+        version="0.2.0",
     )
     app.state.settings = settings
-    app.state.questions = load_questions(settings.questions_file)
 
     engine = create_engine_from_url(settings.database_url)
     init_db(engine)
@@ -50,6 +48,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             model=settings.model_name,
             prompt_builder=prompt_builder,
             timeout_seconds=settings.model_timeout_seconds,
+            max_tokens=settings.model_max_tokens,
             reasoning_effort=settings.model_reasoning_effort,
         )
     else:
@@ -58,11 +57,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.generation_service = QuoteGenerationCoordinator(
         provider=provider,
         validator=QuoteValidator(max_chars=settings.quote_max_chars),
-        questions=app.state.questions,
     )
     app.state.flow_service = FlowService(
         settings=settings,
-        questions=app.state.questions,
         generation_service=app.state.generation_service,
     )
 

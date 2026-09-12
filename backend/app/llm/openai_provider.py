@@ -4,6 +4,8 @@
 MODEL_API_KEY / MODEL_BASE_URL / MODEL_NAME。不硬编码供应商。
 """
 
+import re
+
 import httpx
 
 from app.llm.prompt import PromptBuilder
@@ -14,6 +16,8 @@ from app.llm.provider import (
     map_httpx_error,
 )
 
+THINK_BLOCK = re.compile(r"<think>.*?</think>", re.DOTALL)
+
 
 class OpenAIProtocolProvider:
     def __init__(
@@ -23,6 +27,7 @@ class OpenAIProtocolProvider:
         model: str,
         prompt_builder: PromptBuilder,
         timeout_seconds: float = 15.0,
+        max_tokens: int = 3000,
         client: httpx.Client | None = None,
         reasoning_effort: str | None = None,
     ) -> None:
@@ -30,15 +35,18 @@ class OpenAIProtocolProvider:
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.prompt_builder = prompt_builder
+        self.max_tokens = max_tokens
         self.reasoning_effort = reasoning_effort
         self._client = client or httpx.Client(timeout=timeout_seconds)
 
     def generate(self, request: QuoteRequest) -> GenerationCandidate:
         payload = {
             "model": self.model,
-            "messages": self.prompt_builder.build_messages(request),
+            "messages": self.prompt_builder.build_messages(
+                list(request.user_messages), request.end_kind, request.tone_hint
+            ),
             "temperature": 0.7,
-            "max_tokens": 1000,  # 推理模型的思考也会计入，留足余量
+            "max_tokens": self.max_tokens,  # 推理模型的思考也会计入，留足余量
             "stream": False,
         }
         if self.reasoning_effort:
@@ -60,7 +68,8 @@ class OpenAIProtocolProvider:
         except (KeyError, IndexError, ValueError) as exc:
             raise ModelCallError("MODEL_ERROR", "模型响应格式异常") from exc
 
-        text = (content or "").strip()
+        # 推理模型会把 CoT 直接写进 content，先剥掉 <think>...</think> 再交给 validator。
+        text = THINK_BLOCK.sub("", content or "").strip()
         if not text:
             raise ModelCallError("MODEL_ERROR", "模型返回空内容")
         return GenerationCandidate(text=text, model=self.model)

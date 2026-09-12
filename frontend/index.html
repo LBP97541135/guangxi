@@ -10,86 +10,240 @@
 
 <div id="app">
 
-  <!-- ================= 阶段 1: 光隙入口 ================= -->
+  <!-- ================= 阶段 0: 开场品牌片（首次访问播放） ================= -->
+  <div id="opening-stage" class="stage-view">
+    <video id="opening-video" src="video/opening.mp4" playsinline preload="auto"></video>
+    <button id="opening-sound" class="video-sound-btn" title="切换声音" aria-label="切换声音">🔊</button>
+    <button id="opening-skip" class="opening-skip-btn">跳过 ▸</button>
+    <button id="opening-start" class="opening-start-btn">
+      <span class="opening-start-icon">▶</span>
+      <span class="opening-start-text">点亮光隙</span>
+    </button>
+  </div>
+
+  <!-- ================= 阶段 1: 光隙入口（4 瓣剥开） ================= -->
   <div id="portal-stage" class="stage-view">
-    <div class="portal-container" id="portal-touch-area">
-      <div class="portal-back">
-        <div class="portal-title">光隙</div>
-        <div class="portal-subtitle">撕掉标签 · 拼出真我</div>
+    <div class="portal-reveal" id="portal-reveal">
+      <div class="portal-reveal-glow"></div>
+      <div class="portal-reveal-silhouette" data-asset="向导迎候剪影（占位）">
+        <div class="silhouette-orb"></div>
+        <div class="silhouette-body"></div>
       </div>
-      <div class="door-left" id="door-left"></div>
-      <div class="door-right" id="door-right"></div>
-      <div class="light-slit" id="light-slit"></div>
     </div>
-    <div class="portal-hint" id="portal-hint">✦ 按住并向两侧拉开光缝 ✦</div>
+    <div id="portal-shell" class="portal-shell" aria-hidden="true">
+      <div class="portal-slit"></div>
+      <div class="petal petal-tl" id="petal-tl" data-id="petal-tl">
+        <div class="petal-face"></div>
+        <div class="petal-back"></div>
+      </div>
+      <div class="petal petal-tr" id="petal-tr" data-id="petal-tr">
+        <div class="petal-face"></div>
+        <div class="petal-back"></div>
+      </div>
+      <div class="petal petal-bl" id="petal-bl" data-id="petal-bl">
+        <div class="petal-face"></div>
+        <div class="petal-back"></div>
+      </div>
+      <div class="petal petal-br" id="petal-br" data-id="petal-br">
+        <div class="petal-face"></div>
+        <div class="petal-back"></div>
+      </div>
+    </div>
+    <div class="portal-hint" id="portal-hint">✦ 手指轻触缝隙中心 ✦</div>
   </div>
 
-  <!-- ================= 阶段 2: 向导迎候（立绘素材位：.angel-avatar 内替换） ================= -->
+  <!-- ================= 阶段 2: 向导迎候（视频 + 字幕） ================= -->
   <div id="welcome-stage" class="stage-view">
-    <div class="angel-avatar" data-asset="GUIDE_ART（向导立绘素材位）">
-      <div class="angel-halo"></div>
-      <div class="angel-orb"></div>
+    <video id="welcome-video" class="welcome-video" src="video/welcome.mp4" playsinline preload="auto"></video>
+    <div class="welcome-gradient"></div>
+    <button id="welcome-sound" class="video-sound-btn" title="切换声音" aria-label="切换声音">🔊</button>
+    <button class="welcome-replay-btn" id="welcome-replay-btn" title="重播迎候">↻</button>
+    <div class="welcome-ring" id="welcome-ring" hidden>
+      <div class="welcome-ring-pulse"></div>
+      <div class="welcome-ring-core"></div>
+      <div class="welcome-ring-label">点击留声机进入房间</div>
     </div>
-    <div class="angel-name-badge">✦ 光隙向导 · 提灯者 ✦</div>
-    <div class="welcome-text-wrap" id="welcome-text"></div>
-    <button class="welcome-action-btn" id="welcome-action-btn">「 终于能松一口气了，坐下歇歇 ☕ 」</button>
   </div>
 
-  <!-- ================= 阶段 3: 三轮对话 ================= -->
-  <div id="dialog-stage" class="stage-view">
-    <div class="angel-companion-bar">
-      <div class="mini-angel">
-        <div class="mini-orb"></div>
-        <span class="mini-guide-text" id="mini-guide-cue">向导正提着灯走在你的身侧...</span>
+  <!-- ================= 阶段 2.5: 房间配置 ================= -->
+  <div id="room-stage" class="stage-view">
+    <button id="room-back" class="back-to-portal-btn" title="返回">← 光隙</button>
+    <audio id="room-audio" preload="metadata" loop></audio>
+    <div class="room-layout">
+      <div class="room-preview">
+        <div class="room-preview-title">✦ 你已经把这里调成自己的样子 ✦</div>
+        <div class="room-canvas" id="room-canvas">
+          <div class="room-scene" id="room-scene">
+            <div class="room-wall"></div>
+            <div class="room-window" data-hotspot="window" title="点击切换窗帘">
+              <div class="room-curtain room-curtain-left" id="room-curtain-left"></div>
+              <div class="room-curtain room-curtain-right" id="room-curtain-right"></div>
+              <div class="room-window-light"></div>
+              <div class="room-window-sill"></div>
+            </div>
+            <div class="room-frame" data-hotspot="frame" title="点击切换色温">
+              <div class="room-frame-inner"></div>
+            </div>
+            <div class="room-lamp" data-hotspot="lamp" title="点击调节亮度">
+              <div class="room-lamp-shade"></div>
+              <div class="room-lamp-arm"></div>
+              <div class="room-lamp-base"></div>
+              <div class="room-lamp-glow" id="room-lamp-glow"></div>
+            </div>
+            <div class="room-shelf">
+              <div class="room-book room-book-1"></div>
+              <div class="room-book room-book-2"></div>
+              <div class="room-book room-book-3"></div>
+            </div>
+            <div class="room-vase">
+              <div class="room-vase-neck"></div>
+              <div class="room-vase-body"></div>
+              <div class="room-vase-branch"></div>
+              <div class="room-vase-leaf room-vase-leaf-1"></div>
+              <div class="room-vase-leaf room-vase-leaf-2"></div>
+            </div>
+            <div class="room-candle" data-hotspot="candle" title="点亮/熄灭">
+              <div class="room-candle-flame" id="room-candle-flame"></div>
+              <div class="room-candle-wick"></div>
+              <div class="room-candle-body"></div>
+              <div class="room-candle-glow" id="room-candle-glow"></div>
+            </div>
+            <div class="room-light-overlay" id="room-light-overlay"></div>
+            <div class="room-figure" id="room-figure" data-hotspot="figure">
+              <img src="img/guide-1.png" class="room-figure-img" alt="向导">
+              <div class="room-figure-halo" id="room-figure-halo"></div>
+            </div>
+            <div class="room-gramophone" id="room-gramophone" data-hotspot="gramophone" title="点击选歌">
+              <div class="room-gramophone-horn"></div>
+              <div class="room-gramophone-base"></div>
+            </div>
+            <div class="room-spotlight" id="room-spotlight"></div>
+            <div class="room-dust" id="room-dust"></div>
+            <div class="room-compass" id="room-compass" title="拖动场景或点此归位">
+              <span class="room-compass-arrow">⟳</span>
+            </div>
+          </div>
+          <div class="room-floating-panel" id="room-floating-panel" hidden></div>
+          <div class="room-now-playing" id="room-now-playing" hidden>♪ <span></span></div>
+        </div>
+        <div class="room-quote" id="room-quote">向导：「不用急，待够了再和我说。」</div>
       </div>
-      <div class="step-indicator">
-        <div class="step-dot" id="dot-1"></div>
-        <div class="step-dot" id="dot-2"></div>
-        <div class="step-dot" id="dot-3"></div>
+
+      <div class="room-controls">
+        <div class="room-controls-title">现在想先调哪里？</div>
+
+        <div class="room-control">
+          <div class="room-control-row">
+            <span class="room-control-label">灯光亮度</span>
+            <span class="room-control-value" id="val-brightness">35</span>
+          </div>
+          <input type="range" min="0" max="100" value="35" id="ctrl-brightness" class="room-slider">
+          <div class="room-control-hint">试着再亮一点 / 暗一点</div>
+        </div>
+
+        <div class="room-control">
+          <div class="room-control-row">
+            <span class="room-control-label">音乐音量</span>
+            <span class="room-control-value" id="val-music">34</span>
+          </div>
+          <input type="range" min="0" max="100" value="34" id="ctrl-music" class="room-slider">
+          <div class="room-control-hint">太响会盖过自己的呼吸</div>
+        </div>
+
+        <div class="room-control">
+          <div class="room-control-row">
+            <span class="room-control-label">空间色温</span>
+            <span class="room-control-value" id="val-temp">暖</span>
+          </div>
+          <input type="range" min="0" max="100" value="68" id="ctrl-temp" class="room-slider room-slider-temp">
+          <div class="room-control-hint">冷一点清醒，暖一点温柔</div>
+        </div>
+
+        <div class="room-control">
+          <div class="room-control-row">
+            <span class="room-control-label">窗帘</span>
+            <span class="room-control-value" id="val-curtain">半开</span>
+          </div>
+          <div class="room-toggle-group">
+            <button class="room-toggle" data-curtain="0">关上</button>
+            <button class="room-toggle active" data-curtain="1">半开</button>
+            <button class="room-toggle" data-curtain="2">打开</button>
+          </div>
+        </div>
+
+        <div class="room-status">氛围已保存。点房间里的物品可以直接调节。</div>
+
+        <button class="room-stay-btn" id="room-stay-btn">我想先待一会儿</button>
+        <button class="room-chat-btn" id="room-chat-btn">去找向导聊聊</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 阶段 3: 开放式聊天（galgame 对话框样式） ================= -->
+  <div id="dialog-stage" class="stage-view">
+    <button class="back-to-portal-btn" id="back-to-portal-btn" title="回到光隙入口">← 光隙</button>
+
+    <div class="dialog-figure-area">
+      <img src="img/guide-1.png" class="dialog-figure-img" alt="向导">
+    </div>
+
+    <!-- 经典 galgame 对话框 -->
+    <div class="dialog-textbox">
+      <div class="dialog-name">
+        <span class="dialog-name-tag">✦ 向导 ✦</span>
+      </div>
+      <div class="dialog-text" id="dialog-current-text">……</div>
+      <div class="dialog-next" id="dialog-next">▼</div>
+    </div>
+
+    <!-- 底部游戏菜单栏 + 输入区 -->
+    <div class="chat-bottom-bar">
+      <div class="chat-history-row">
+        <button class="chat-history-btn" id="chat-history-btn">📜 历史</button>
+        <span class="chat-menu-sep">·</span>
+        <button class="chat-history-btn" id="chat-back-to-room">回到房间</button>
+      </div>
+
+      <div class="chat-input-row">
+        <input type="text" id="chat-input" class="chat-input"
+               placeholder="想到什么说什么..." maxlength="2000">
+        <button id="chat-send-btn" class="chat-send-btn">说出口</button>
+        <button id="chat-end-trigger" class="chat-end-inline" hidden>差不多了</button>
       </div>
     </div>
 
-    <div class="rpg-dialog-box" id="dialog-box">
-      <div class="speaker-meta">
-        <div class="speaker-tag" id="speaker-name">向导轻声问</div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <button id="switch-question-btn" class="ghost-btn">🍃 换个情境</button>
-          <span class="skip-typing-hint" id="skip-btn">点击快进 ▾</span>
-        </div>
+    <!-- 历史记录抽屉 -->
+    <div class="chat-history-drawer" id="chat-history-drawer" hidden>
+      <div class="chat-history-header">
+        <span>对话历史</span>
+        <button id="chat-history-close">×</button>
       </div>
+      <div class="chat-history-list" id="chat-history-list"></div>
+    </div>
 
-      <div class="dialog-content">
-        <span id="typewriter-text"></span>
-        <span class="typing-cursor" id="cursor"></span>
-      </div>
+    <!-- 结束选项面板 -->
+    <div class="end-options-panel" id="end-options-panel" hidden>
+      <div class="end-options-title">你想怎么收束这次相遇？</div>
+      <button class="end-option" data-end="user_active">
+        <div class="end-option-main">✦ 我想停在这里</div>
+        <div class="end-option-sub">先把这段话留在这里</div>
+      </button>
+      <button class="end-option" data-end="user_still_talking">
+        <div class="end-option-main">⌛ 其实还没说完，但可以记下这一段</div>
+        <div class="end-option-sub">以后想接着聊也行</div>
+      </button>
+      <button class="end-option" data-end="user_no_want">
+        <div class="end-option-main">🤫 我今天不太想说，先让我听会儿歌</div>
+        <div class="end-option-sub">不用总结，留点安静</div>
+      </button>
+      <button class="end-option end-option-cancel" id="end-options-cancel">← 继续说</button>
+    </div>
 
-      <!-- 生成失败的恢复视图（默认隐藏） -->
-      <div id="failed-view" class="failed-view" hidden>
-        <div class="failed-title">灯影晃了晃，金句没能凝成。</div>
-        <div class="failed-sub">你的三次回答都还在，不必重答。</div>
-        <button id="failed-retry-btn" class="send-btn failed-retry">再试一次</button>
-      </div>
-
-      <div id="answer-area">
-        <div class="inspiration-shelf" id="inspiration-shelf">
-          <span class="shelf-label">向导隐隐看见的画面：</span>
-        </div>
-
-        <div class="input-complex">
-          <div class="input-row">
-            <button class="mic-btn" id="mic-btn" title="对向导轻声倾诉（语音转文字）">🎙️</button>
-            <input type="text" id="user-custom-input" class="custom-input"
-                   placeholder="用自己的话说说看……" maxlength="200">
-            <button id="send-custom-btn" class="send-btn">交付真我</button>
-          </div>
-          <div class="actions-bar">
-            <button class="ai-assist-btn" id="ai-assist-btn" hidden>
-              <span>✨</span><span id="ai-btn-text">让向导替我显影电影镜头</span>
-            </button>
-            <span class="speech-status" id="speech-status">向导在此守护，绝无任何标签与评判</span>
-          </div>
-        </div>
-      </div>
+    <!-- 生成失败的恢复视图 -->
+    <div id="failed-view" class="failed-view" hidden>
+      <div class="failed-title">灯影晃了晃，那句话还没成形。</div>
+      <div class="failed-sub">你说过的话我都记得，可以再试一次。</div>
+      <button id="failed-retry-btn" class="failed-retry">再试一次</button>
     </div>
   </div>
 
@@ -104,29 +258,34 @@
     </div>
   </div>
 
-  <!-- ================= 阶段 5: 金句卡片 ================= -->
+  <!-- ================= 阶段 5: 远行鼓励 ================= -->
   <div id="result-stage" class="stage-view">
-    <div class="card-container">
-      <div class="golden-card" id="golden-card">
-        <div class="card-header">
-          <span>LIGHT GAP · 灵魂金句</span>
-          <span class="card-badge" id="card-id">LG-00000000</span>
-        </div>
-        <div class="card-body">
-          <div class="card-quote-mark">“</div>
-          <div class="card-sentence" id="golden-sentence-text"></div>
-        </div>
-        <div class="card-footer-art" data-asset="CARD_BG（水彩背景素材位）"></div>
-        <div class="card-info-bar">
-          <span>向导为你提灯看见的真我</span>
-          <span id="card-date">2026.09.10</span>
-        </div>
+    <button class="back-to-portal-btn" id="back-to-portal-btn" title="回到光隙入口">← 光隙</button>
+    <div class="result-layout">
+      <div class="result-room" id="result-room">
+        <div class="result-room-line">房间的灯还亮着，门已经为你打开</div>
+        <img src="img/guide-2.png" class="result-figure-img" alt="向导">
+        <div class="result-figure-lamp"></div>
       </div>
 
-      <div class="result-actions">
-        <button class="action-btn btn-primary" id="copy-quote-btn">复制文字</button>
-        <button class="action-btn btn-primary" id="save-card-btn">下载卡片</button>
-        <button class="action-btn btn-outline" id="restart-btn">再次探访光隙</button>
+      <div class="result-panel">
+        <div class="result-panel-title">把这句远行鼓励变成你的</div>
+        <div class="result-context">
+          <div class="result-context-label">刚才你说：</div>
+          <div class="result-context-text" id="result-context-text"></div>
+        </div>
+        <textarea id="result-quote-text" class="result-quote-text" maxlength="120"></textarea>
+        <div class="result-variant-row">
+          <button class="result-variant-btn" data-tone="softer">更温柔一点</button>
+          <button class="result-variant-btn" data-tone="stronger">更有力量一点</button>
+          <button class="result-variant-btn" data-tone="default">重写一句</button>
+        </div>
+        <div class="result-hint">这不是测评结果，也不是对你的定义。你可以删掉、修改，或者不带走。</div>
+        <div class="result-meta-row">
+          <input type="text" id="result-name-input" class="result-name-input"
+                 placeholder="本次相遇·未命名" maxlength="20">
+        </div>
+        <button class="result-take-btn" id="result-take-btn">带着这句话出发</button>
       </div>
     </div>
   </div>
@@ -134,6 +293,8 @@
 </div>
 
 <div id="toast" class="toast" hidden></div>
+
+<div id="mode-badge" class="mode-badge" title="点击切换 真实/模拟 模式">模拟</div>
 
 <script src="vendor/html2canvas.min.js"></script>
 <script src="app.js"></script>

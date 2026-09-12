@@ -13,10 +13,16 @@ from app.error_codes import MODEL_ERROR, MODEL_TIMEOUT
 
 @dataclass(frozen=True)
 class QuoteRequest:
-    """三个有序问题与三个有序回答。"""
+    """开放式聊天的金句生成请求。
 
-    questions: tuple[str, str, str]
-    answers: tuple[str, str, str]
+    user_messages 是用户按时间顺序说过的所有话（不含 guide 回复）。
+    end_kind 决定 prompt 末尾的语气指引（user_active / user_still_talking / user_no_want / natural_close）。
+    tone_hint 可选，由 result-stage 的「更温柔一点 / 更有力量一点」按钮注入。
+    """
+
+    user_messages: tuple[str, ...]
+    end_kind: str = "natural_close"
+    tone_hint: str | None = None
 
 
 @dataclass(frozen=True)

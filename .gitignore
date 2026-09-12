@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.pytest_tmp/
+.venv/
+.venv-*
+
+# SQLite 本地状态（不入库）
+guangxi.db
+guangxi.db-shm
+guangxi.db-wal
