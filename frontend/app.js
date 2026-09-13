@@ -503,6 +503,10 @@ function pauseAllVideos() {
     const v = $(id);
     if (v) { try { v.pause(); } catch (err) { /* ignore */ } }
   });
+}
+
+// 留声机音乐单独控制：进聊天/回房间不打断，只在离开房间流程时停
+function pauseRoomAudio() {
   const audio = $('room-audio');
   if (audio) { try { audio.pause(); } catch (err) { /* ignore */ } }
 }
@@ -569,6 +573,8 @@ function loadRoomConfig() {
   try {
     const raw = localStorage.getItem(ROOM_STORAGE_KEY);
     if (raw) roomConfig = { ...ROOM_DEFAULTS, ...JSON.parse(raw) };
+    // 旧存档可能是三态（0/1/2），收敛到两态（0=关上 1=打开）
+    if (roomConfig.curtain !== 0 && roomConfig.curtain !== 1) roomConfig.curtain = ROOM_DEFAULTS.curtain;
   } catch (err) { /* ignore */ }
 }
 function saveRoomConfig() {
@@ -580,7 +586,7 @@ function tempText(v) {
   if (v >= 30) return '中性';
   return '冷';
 }
-const CURTAIN_TEXT = ['关上', '半开', '打开'];
+const CURTAIN_TEXT = ['关上', '打开'];
 
 function applyRoomPreview() {
   const overlay = $('room-light-overlay');
@@ -598,12 +604,12 @@ function applyRoomPreview() {
   // 留声机边缘高光
   const gram = $('room-gramophone');
   if (gram) gram.style.filter = `drop-shadow(0 0 ${3 + b / 12}px rgba(245, 166, 35, ${0.3 + b / 200}))`;
-  // 窗帘位置
-  const left = $('room-curtain-left');
-  const right = $('room-curtain-right');
-  const c = roomConfig.curtain;
-  if (left) left.style.transform = c === 0 ? 'translateX(-10%)' : c === 1 ? 'translateX(-30%)' : 'translateX(-65%)';
-  if (right) right.style.transform = c === 0 ? 'translateX(10%)' : c === 1 ? 'translateX(30%)' : 'translateX(65%)';
+  // 窗帘图：关上 / 打开（打开图为带窗景完整图）
+  const curtainImg = $('room-curtain-img');
+  if (curtainImg) {
+    curtainImg.src = roomConfig.curtain === 0 ? 'img/curtain-closed.png' : 'img/curtain-open.png';
+    curtainImg.style.opacity = '1';
+  }
 }
 
 function applyAudioVolume() {
@@ -636,12 +642,18 @@ function applyAudioVolume() {
 
 function playRoomSong(id) {
   const audio = $('room-audio');
-  if (!audio) return;
+  if (!audio) {
+    showToast('音频元素缺失（#room-audio），请刷新页面', 'error');
+    return;
+  }
+  const song = ROOM_SONGS.find((s) => s.id === id);
+  const name = song ? song.name : id;
   const url = `https://music.163.com/song/media/outer/url?id=${id}.mp3`;
   roomSongId = id;
   audio.src = url;
   audio.muted = false;
   applyAudioVolume();
+  showToast(`已点播《${name}》，加载中…`);
   // 加载 + 播放；详细错误已在 bindAudioDiagnostics 里捕获
   const playPromise = audio.play();
   if (playPromise && playPromise.then) {
@@ -652,6 +664,17 @@ function playRoomSong(id) {
       showToast('播放被浏览器拦截，点页面任意位置后再试', 'error');
     });
   }
+  // 3 秒自检：若还没真正出声，弹具体原因
+  setTimeout(() => {
+    if (roomSongId !== id) return;
+    if (audio.paused) {
+      showToast('音频仍未开始播放 — 可能被 Edge 安全策略拦截，按 F12 看控制台红字', 'error');
+    } else if (audio.volume === 0 || audio.muted) {
+      showToast('在播放但音量为 0 — 把房间面板「音乐」滑块调高', 'error');
+    } else if (audio.currentTime <= 0.1) {
+      showToast('已连接但缓冲中，网络较慢，再等几秒', 'info');
+    }
+  }, 3000);
   updateSongListUI();
   showNowPlaying(id);
 }
@@ -696,7 +719,7 @@ function getContextualQuote() {
   if (c.brightness < 15) return '再暗一点也行，藏得住心事。';
   if (c.brightness > 78) return '亮得太满了，反而看不清自己。';
   if (c.curtain === 0) return '关上窗，外面再吵也进不来。';
-  if (c.curtain === 2 && c.brightness > 55) return '打开窗，外面的风可以进来了。';
+  if (c.curtain === 1 && c.brightness > 55) return '打开窗，外面的风可以进来了。';
   if (c.temp < 25) return '冷一点也好，思绪更清楚。';
   if (c.temp > 85) return '太暖会犯困，就在这儿眯一会儿吧。';
   if (c.music > 75) return '声音再大一点就把安静也盖住了。';
@@ -785,18 +808,18 @@ function showFloatingPanel(targetEl, contentHTML) {
 }
 
 function bindRoomItems() {
-  // 窗户 → 切换窗帘
-  document.querySelector('.room-window')?.addEventListener('click', () => {
-    const next = (roomConfig.curtain + 1) % 3;
+  // 窗户 → 切换窗帘（两态：关上 ⇄ 打开）
+  document.querySelector('.room-window-area')?.addEventListener('click', () => {
+    const next = (roomConfig.curtain + 1) % 2;
     roomConfig.curtain = next;
     $('val-curtain').textContent = CURTAIN_TEXT[next];
-    document.querySelectorAll('.room-toggle').forEach((b, i) => {
+    document.querySelectorAll('.room-toggle').forEach((b) => {
       b.classList.toggle('active', parseInt(b.dataset.curtain, 10) === next);
     });
     applyRoomPreview();
     saveRoomConfig();
     maybeUpdateQuote();
-    showPreviewTip(document.querySelector('.room-window'), `窗帘${CURTAIN_TEXT[next]}`);
+    showPreviewTip(document.querySelector('.room-window-area'), `窗帘${CURTAIN_TEXT[next]}`);
   });
 
   // 蜡烛 → 点亮/熄灭
@@ -817,7 +840,7 @@ function bindRoomItems() {
   });
 
   // 台灯 → 浮窗弹亮度滑块
-  const lamp = document.querySelector('.room-lamp');
+  const lamp = document.querySelector('.room-lamp-img');
   lamp?.addEventListener('click', () => {
     showFloatingPanel(lamp, `
       <div style="font-size:11px;color:#F5A623;letter-spacing:1.5px;margin-bottom:6px;">调节亮度</div>
@@ -840,32 +863,8 @@ function bindRoomItems() {
     });
   });
 
-  // 挂画 → 浮窗弹色温
-  const frame = document.querySelector('.room-frame');
-  frame?.addEventListener('click', () => {
-    showFloatingPanel(frame, `
-      <div style="font-size:11px;color:#F5A623;letter-spacing:1.5px;margin-bottom:6px;">空间色温</div>
-      <input type="range" min="0" max="100" value="${roomConfig.temp}"
-             class="room-slider room-slider-temp" id="popup-temp"
-             style="width:100%;">
-      <div style="text-align:right;font-size:11px;color:rgba(245,230,200,0.6);margin-top:4px;">
-        <span id="popup-temp-val">${tempText(roomConfig.temp)}</span>
-      </div>
-    `);
-    const slider = $('popup-temp');
-    slider.addEventListener('input', () => {
-      roomConfig.temp = parseInt(slider.value, 10);
-      $('val-temp').textContent = tempText(roomConfig.temp);
-      $('ctrl-temp').value = roomConfig.temp;
-      $('popup-temp-val').textContent = tempText(roomConfig.temp);
-      applyRoomPreview();
-      saveRoomConfig();
-      maybeUpdateQuote();
-    });
-  });
-
-  // 留声机 → 浮窗弹曲目列表
-  const gram = document.querySelector('.room-gramophone');
+  // 留声机 → 浮窗弹曲目列表（id 在 PNG 图元素上）
+  const gram = $('room-gramophone');
   gram?.addEventListener('click', () => {
     const list = ROOM_SONGS.map(song => {
       const isPlaying = song.id === roomSongId;
@@ -880,16 +879,17 @@ function bindRoomItems() {
       <div style="font-size:11px;color:#F5A623;letter-spacing:1.5px;margin-bottom:6px;">🎵 留声机曲目</div>
       <div class="room-fp-list">${list}</div>
     `);
-    panel.querySelectorAll('.room-fp-song').forEach(row => {
-      row.addEventListener('click', () => {
-        const id = row.dataset.id;
-        if (roomSongId === id) {
-          toggleRoomSong();
-        } else {
-          playRoomSong(id);
-        }
-        closeFloatingPanel();
-      });
+    // 事件委托：面板内任意歌曲行点击都接管，防绑定丢失
+    panel.addEventListener('click', (e) => {
+      const row = e.target.closest('.room-fp-song');
+      if (!row) return;
+      const id = row.dataset.id;
+      if (roomSongId === id) {
+        toggleRoomSong();
+      } else {
+        playRoomSong(id);
+      }
+      closeFloatingPanel();
     });
   });
 
@@ -912,8 +912,8 @@ function bindRoomCamera() {
   let lastMoveTime = 0;
 
   const onDown = (e) => {
-    // 不抢点击物件的事件
-    if (e.target.closest('[data-hotspot]') || e.target.closest('.room-compass')) return;
+    // 不抢点击物件的事件（物件热点 / 罗盘 / 浮窗内的按钮和滑块）
+    if (e.target.closest('[data-hotspot]') || e.target.closest('.room-compass') || e.target.closest('.room-floating-panel')) return;
     dragging = true;
     startX = e.clientX;
     startY = e.clientY;
@@ -1091,9 +1091,6 @@ async function enterDialog(snapshot) {
   $('chat-input-area').hidden = false;
   $('end-options-panel').hidden = true;
 
-  const thread = $('chat-thread');
-  if (thread) thread.innerHTML = '';
-
   // 没有传 snapshot 的话，先去拿一次（从房间直接跳进来时会触发）
   let msgs = (snapshot && snapshot.messages) || [];
   if (!snapshot && state.sessionId) {
@@ -1113,12 +1110,8 @@ async function enterDialog(snapshot) {
   }
   msgs.forEach((m) => appendBubble(m.role === 'user' ? 'user' : 'guide', m.content));
 
-  $('chat-status').textContent = '向导在此守护，绝无任何标签与评判';
-  $('mini-guide-cue').textContent = '向导提灯坐在你身侧';
   $('chat-input').value = '';
   $('chat-input').focus();
-
-  if (thread) thread.scrollTop = thread.scrollHeight;
 }
 
 function enterDialogFailed() {
@@ -1126,7 +1119,6 @@ function enterDialogFailed() {
   $('chat-input-area').hidden = true;
   $('end-options-panel').hidden = true;
   $('failed-view').hidden = false;
-  $('mini-guide-cue').textContent = '向导还捧着你说过的话，等你一句话。';
 }
 
 async function sendChatMessage() {
@@ -1468,6 +1460,7 @@ async function takeQuoteAway() {
 
 function restartJourney() {
   pauseAllVideos();
+  pauseRoomAudio();
   clearSession();
   state.round = 1;
   state.question = null;
@@ -1479,6 +1472,7 @@ function restartJourney() {
 
 function backToPortal() {
   pauseAllVideos();
+  pauseRoomAudio();
   state.busy = false;
   $('chat-input-area').hidden = false;
   $('end-options-panel').hidden = true;
@@ -1511,6 +1505,7 @@ function bindEvents() {
 
   $('room-back').addEventListener('click', () => {
     pauseAllVideos();
+    pauseRoomAudio();
     showStage('welcome-stage');
     welcomeEnded = false;
     playWelcomeVideo();
@@ -1552,6 +1547,7 @@ function bindEvents() {
   $('result-take-btn').addEventListener('click', takeQuoteAway);
 
   $('back-to-portal-btn').addEventListener('click', backToPortal);
+  $('result-back-btn').addEventListener('click', backToPortal);
 }
 
 bindEvents();

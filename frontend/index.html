@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>光隙 LIGHT GAP · 撕掉标签，拼出真我</title>
+  <link rel="icon" type="image/svg+xml" href="img/logo.svg">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -67,7 +68,7 @@
 
   <!-- ================= 阶段 2.5: 房间配置 ================= -->
   <div id="room-stage" class="stage-view">
-    <button id="room-back" class="back-to-portal-btn" title="返回">← 光隙</button>
+    <button id="room-back" class="back-to-portal-btn" title="返回光隙">‹ 返回光隙</button>
     <audio id="room-audio" preload="metadata" loop></audio>
     <div class="room-layout">
       <div class="room-preview">
@@ -75,47 +76,17 @@
         <div class="room-canvas" id="room-canvas">
           <div class="room-scene" id="room-scene">
             <div class="room-wall"></div>
-            <div class="room-window" data-hotspot="window" title="点击切换窗帘">
-              <div class="room-curtain room-curtain-left" id="room-curtain-left"></div>
-              <div class="room-curtain room-curtain-right" id="room-curtain-right"></div>
-              <div class="room-window-light"></div>
-              <div class="room-window-sill"></div>
+            <img src="img/sofa.png" class="room-asset room-sofa" data-hotspot="sofa" alt="沙发" title="点击听向导讲故事">
+            <!-- 窗户（窗帘两态：关上 / 打开，打开图为带窗景完整图） -->
+            <div class="room-window-area" data-hotspot="window" title="点击切换窗帘">
+              <img src="img/curtain-closed.png" class="room-curtain-img" id="room-curtain-img" alt="窗帘">
             </div>
-            <div class="room-frame" data-hotspot="frame" title="点击切换色温">
-              <div class="room-frame-inner"></div>
-            </div>
-            <div class="room-lamp" data-hotspot="lamp" title="点击调节亮度">
-              <div class="room-lamp-shade"></div>
-              <div class="room-lamp-arm"></div>
-              <div class="room-lamp-base"></div>
-              <div class="room-lamp-glow" id="room-lamp-glow"></div>
-            </div>
-            <div class="room-shelf">
-              <div class="room-book room-book-1"></div>
-              <div class="room-book room-book-2"></div>
-              <div class="room-book room-book-3"></div>
-            </div>
-            <div class="room-vase">
-              <div class="room-vase-neck"></div>
-              <div class="room-vase-body"></div>
-              <div class="room-vase-branch"></div>
-              <div class="room-vase-leaf room-vase-leaf-1"></div>
-              <div class="room-vase-leaf room-vase-leaf-2"></div>
-            </div>
-            <div class="room-candle" data-hotspot="candle" title="点亮/熄灭">
-              <div class="room-candle-flame" id="room-candle-flame"></div>
-              <div class="room-candle-wick"></div>
-              <div class="room-candle-body"></div>
-              <div class="room-candle-glow" id="room-candle-glow"></div>
-            </div>
+            <img src="img/lamp.png" class="room-asset room-lamp-img" data-hotspot="lamp" alt="台灯" title="点击调节亮度">
+            <img src="img/gramophone.png" class="room-asset room-gramophone-img" id="room-gramophone" data-hotspot="gramophone" alt="留声机" title="点击选歌">
             <div class="room-light-overlay" id="room-light-overlay"></div>
             <div class="room-figure" id="room-figure" data-hotspot="figure">
               <img src="img/guide-1.png" class="room-figure-img" alt="向导">
               <div class="room-figure-halo" id="room-figure-halo"></div>
-            </div>
-            <div class="room-gramophone" id="room-gramophone" data-hotspot="gramophone" title="点击选歌">
-              <div class="room-gramophone-horn"></div>
-              <div class="room-gramophone-base"></div>
             </div>
             <div class="room-spotlight" id="room-spotlight"></div>
             <div class="room-dust" id="room-dust"></div>
@@ -162,12 +133,11 @@
         <div class="room-control">
           <div class="room-control-row">
             <span class="room-control-label">窗帘</span>
-            <span class="room-control-value" id="val-curtain">半开</span>
+            <span class="room-control-value" id="val-curtain">打开</span>
           </div>
           <div class="room-toggle-group">
             <button class="room-toggle" data-curtain="0">关上</button>
-            <button class="room-toggle active" data-curtain="1">半开</button>
-            <button class="room-toggle" data-curtain="2">打开</button>
+            <button class="room-toggle active" data-curtain="1">打开</button>
           </div>
         </div>
 
@@ -181,7 +151,7 @@
 
   <!-- ================= 阶段 3: 开放式聊天（galgame 对话框样式） ================= -->
   <div id="dialog-stage" class="stage-view">
-    <button class="back-to-portal-btn" id="back-to-portal-btn" title="回到光隙入口">← 光隙</button>
+    <button class="back-to-portal-btn" id="back-to-portal-btn" title="回到光隙入口">‹ 返回光隙</button>
 
     <div class="dialog-figure-area">
       <img src="img/guide-1.png" class="dialog-figure-img" alt="向导">
@@ -196,8 +166,8 @@
       <div class="dialog-next" id="dialog-next">▼</div>
     </div>
 
-    <!-- 底部游戏菜单栏 + 输入区 -->
-    <div class="chat-bottom-bar">
+    <!-- 底部游戏菜单栏 + 输入区（id 供 JS 控制整体显隐） -->
+    <div class="chat-bottom-bar" id="chat-input-area">
       <div class="chat-history-row">
         <button class="chat-history-btn" id="chat-history-btn">📜 历史</button>
         <span class="chat-menu-sep">·</span>
@@ -260,7 +230,7 @@
 
   <!-- ================= 阶段 5: 远行鼓励 ================= -->
   <div id="result-stage" class="stage-view">
-    <button class="back-to-portal-btn" id="back-to-portal-btn" title="回到光隙入口">← 光隙</button>
+    <button class="back-to-portal-btn" id="result-back-btn" title="回到光隙入口">‹ 返回光隙</button>
     <div class="result-layout">
       <div class="result-room" id="result-room">
         <div class="result-room-line">房间的灯还亮着，门已经为你打开</div>
