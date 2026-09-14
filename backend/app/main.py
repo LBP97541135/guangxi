@@ -39,6 +39,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.session_factory = make_session_factory(engine)
 
     prompt_builder = PromptBuilder(load_system_rules(settings.prompt_file))
+    chat_provider: object
     if settings.model_provider == "real":
         if not settings.model_api_key or not settings.model_name:
             raise RuntimeError("MODEL_PROVIDER=real 需要配置 MODEL_API_KEY 与 MODEL_NAME")
@@ -50,9 +51,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             timeout_seconds=settings.model_timeout_seconds,
             max_tokens=settings.model_max_tokens,
             reasoning_effort=settings.model_reasoning_effort,
+            chat_system_rules=load_system_rules(settings.chat_prompt_file),
         )
+        chat_provider = provider
     else:
         provider = FakeQuoteProvider()
+        chat_provider = provider
 
     app.state.generation_service = QuoteGenerationCoordinator(
         provider=provider,
@@ -61,6 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.flow_service = FlowService(
         settings=settings,
         generation_service=app.state.generation_service,
+        chat_provider=chat_provider,
     )
 
     app.include_router(api.router, prefix="/api")

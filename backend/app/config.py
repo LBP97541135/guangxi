@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./guangxi.db"
     questions_file: Path = Path("config/questions.json")
     prompt_file: Path = Path("config/prompt.txt")
+    chat_prompt_file: Path = Path("config/chat_prompt.txt")
 
     model_provider: Literal["fake", "real"] = "fake"
     model_api_key: str | None = None

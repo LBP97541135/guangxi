@@ -9,6 +9,8 @@ end_conversation 立即返回 GENERATING 状态；金句生成跑在 FastAPI 后
 前端轮询 GET /sessions/{id} 拿最终结果。
 """
 
+import logging
+
 from sqlalchemy.orm import Session as OrmSession
 
 from app import repository as repo
@@ -19,19 +21,40 @@ from app.error_codes import (
     SESSION_NOT_FOUND,
 )
 from app.errors import ApiError
+from app.llm.fake import canned_chat_reply
+from app.llm.provider import ModelCallError
 from app.models import Session as SessionRow
 from app.schemas import EndKind, MessageIn, SessionOut, SessionStatus
 from app.services import session_service
 from app.services.generation import QuoteGenerationError
 
 
+logger = logging.getLogger(__name__)
+
 OPEN_STATES = (SessionStatus.OPEN_CHAT,)
+
+# 每次请求带进模型的消息条数上限（含开场白），防止历史无限膨胀
+MAX_HISTORY_MESSAGES = 40
 
 
 class FlowService:
-    def __init__(self, settings, generation_service):
+    def __init__(self, settings, generation_service, chat_provider=None):
         self.settings = settings
         self.generation = generation_service
+        self.chat_provider = chat_provider
+
+    def _guide_reply(self, history: list[dict]) -> str:
+        """生成向导回复：real 模式走模型，失败兜底 canned；fake 模式直接 canned。"""
+        if self.chat_provider is None:
+            return canned_chat_reply(history)
+        try:
+            return self.chat_provider.generate_chat_reply(history)
+        except ModelCallError as exc:
+            logger.warning(
+                "chat reply fallback to canned: %s %s",
+                exc.code, exc.message, extra={"error_code": exc.code},
+            )
+            return canned_chat_reply(history)
 
     def submit_message(
         self, db: OrmSession, session_id: str, message: MessageIn
@@ -58,6 +81,13 @@ class FlowService:
 
         seq = repo.next_message_seq(db, session_id)
         repo.add_message(db, session_id, seq, role="user", content=content)
+
+        history = [
+            {"role": m.role, "content": m.content}
+            for m in repo.list_messages(db, session_id)[-MAX_HISTORY_MESSAGES:]
+        ]
+        reply = self._guide_reply(history)
+        repo.add_message(db, session_id, seq + 1, role="guide", content=reply)
         db.commit()
 
         return session_service.load_session_state(db, session_id)

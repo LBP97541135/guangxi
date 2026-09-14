@@ -1019,14 +1019,6 @@ function enterRoom() {
 
 // ================= 阶段 3: 开放式聊天 =================
 
-const GUIDE_REPLY_LINES = [
-  '嗯，我在听。',
-  '听到了。',
-  '嗯嗯。',
-  '我没走开。',
-  '可以说慢一点，也可以停一下。',
-];
-
 function appendBubble(role, text, opts = {}) {
   // galgame 模式：不显示气泡流，改为更新底部对话框的当前文本
   if (role === 'guide') {
@@ -1145,18 +1137,8 @@ async function sendChatMessage() {
     lastUserMessageText = content;
 
     const result = await apiSubmitMessage(state.sessionId, content);
-    // 同步消息历史（避免重复或漏掉）
-    rebuildChatThread(result.messages);
-
-    // 向导固定回复（一行，模拟"我在听"），打字机效果
-    const reply = GUIDE_REPLY_LINES[Math.floor(Math.random() * GUIDE_REPLY_LINES.length)];
-    const bubble = appendBubble('guide', reply, { typing: true });
-    setTimeout(() => {
-      if (bubble) {
-        bubble.textContent = reply;
-        bubble.classList.remove('typing');
-      }
-    }, 800 + Math.min(reply.length * 30, 1200));
+    // 同步消息历史；向导回复（真实模式=模型生成；mock=脚本台词）以打字机效果显示
+    rebuildChatThread(result.messages, { typing: true });
   } catch (err) {
     if (err.code === 'SESSION_NOT_FOUND') {
       clearSession();
@@ -1173,7 +1155,7 @@ async function sendChatMessage() {
   }
 }
 
-function rebuildChatThread(messages) {
+function rebuildChatThread(messages, opts = {}) {
   // galgame 模式：清空历史，画廊重置最新对话
   if (!window.__chatHistory) window.__chatHistory = [];
   window.__chatHistory = [];
@@ -1182,7 +1164,7 @@ function rebuildChatThread(messages) {
   });
   // 把最后一条 guide 消息显示到对话框
   const lastGuide = (messages || []).filter((m) => m.role === 'guide').pop();
-  if (lastGuide) setCurrentDialog(lastGuide.content, false);
+  if (lastGuide) setCurrentDialog(lastGuide.content, Boolean(opts.typing));
 }
 
 function showEndOptions() {
